@@ -4,3 +4,5 @@
 /nbbuild/
 /nbdist/
 /.nb-gradle/
+target/
+*.class
