@@ -2,32 +2,36 @@ package javaquizgame;
 
 import java.util.*;
 
-public class PROJECTSYSTEM_TRIAL {
-     static class Question {
-        String text;
-        String[] options; // index 0=A, 1=B, 2=C, 3=D
-        char correctAnswer;
-
-        Question(String text, String[] options, char correctAnswer) {
-            this.text = text;
-            this.options = options;
-            this.correctAnswer = correctAnswer;
-        }
-    }
-
+public class Main {
     private static final int WIDTH = 60; // inner content width
     private final Scanner scanner = new Scanner(System.in);
-    private final List<Question> questionPool = new ArrayList<>();
+    private static final List<Question> questionPool = new ArrayList<>();
     private List<Question> activeQuestions = new ArrayList<>();
     private int score = 0;
 
     public static void main(String[] args) {
-        PROJECTSYSTEM_TRIAL game = new PROJECTSYSTEM_TRIAL();
-        game.loadQuestions();
-        game.printIntro();
-        game.chooseItemCount();
-        game.playQuiz();
-        game.printResults();
+        Questions questions = new Questions();
+        questionPool.addAll(questions.getQuestionPool());
+        
+        for (int i = 0; i < questionPool.size(); i++) {
+            Question q = questionPool.get(i);
+
+            System.out.println("Question " + (i + 1) + ": " + q.text);
+
+            for (int j = 0; j < q.options.length; j++) {
+                System.out.println((char)('A' + j) + ". " + q.options[j]);
+            }
+
+            System.out.println("Correct answer: " + q.correctAnswer);
+            System.out.println();
+        }
+        
+//        Main game = new Main();
+//        //game.loadQuestions();
+//        game.printIntro();
+//        game.chooseItemCount();
+//        game.playQuiz();
+//        game.printResults();
     }
 
     private void loadQuestions() {

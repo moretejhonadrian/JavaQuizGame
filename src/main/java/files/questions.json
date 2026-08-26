@@ -1,0 +1,132 @@
+[
+  {
+    "text": "Which symbol is used to end most statements in Java?",
+    "options": ["Colon :)", "Semicolon ;)", "Period (.)", "Comma (,)"],
+    "correctAnswer": "B"
+  },
+  {
+    "text": "Which of these is a valid Java variable name?",
+    "options": ["2total", "total-2", "_total2", "total 2"],
+    "correctAnswer": "C"
+  },
+  {
+    "text": "Which keyword declares a constant in Java?",
+    "options": ["const", "static", "final", "constant"],
+    "correctAnswer": "C"
+  },
+  {
+    "text": "Which of these is NOT a Java primitive data type?",
+    "options": ["int", "boolean", "String", "char"],
+    "correctAnswer": "C"
+  },
+  {
+    "text": "What is the size of an int in Java?",
+    "options": ["8-bit", "16-bit", "32-bit", "64-bit"],
+    "correctAnswer": "C"
+  },
+  {
+    "text": "Which data type is used to store true/false values?",
+    "options": ["bit", "boolean", "bool", "flag"],
+    "correctAnswer": "B"
+  },
+  {
+    "text": "Which symbol is used for single-line comments in Java?",
+    "options": ["//", "/*", "#", "--"],
+    "correctAnswer": "A"
+  },
+  {
+    "text": "Which method is the entry point of a Java program?",
+    "options": ["start()", "run()", "main()", "init()"],
+    "correctAnswer": "C"
+  },
+  {
+    "text": "What keyword is used to define a method that returns nothing?",
+    "options": ["null", "void", "empty", "none"],
+    "correctAnswer": "B"
+  },
+  {
+    "text": "What is it called when two methods in the same class share a name but differ in parameters?",
+    "options": ["Overriding", "Overloading", "Inheriting", "Cloning"],
+    "correctAnswer": "B"
+  },
+  {
+    "text": "Which keyword allows a subclass to redefine a parent class method?",
+    "options": ["@Override", "@Redefine", "@New", "@Replace"],
+    "correctAnswer": "A"
+  },
+  {
+    "text": "What do you call the values passed into a method when it is called?",
+    "options": ["Fields", "Arguments", "Attributes", "Returns"],
+    "correctAnswer": "B"
+  },
+  {
+    "text": "What term describes the variables that belong to a class (its properties)?",
+    "options": ["Methods", "Attributes", "Constructors", "Loops"],
+    "correctAnswer": "B"
+  },
+  {
+    "text": "Which access modifier makes a member visible only within its own class?",
+    "options": ["public", "protected", "default", "private"],
+    "correctAnswer": "D"
+  },
+  {
+    "text": "Which keyword is used to create a subclass in Java?",
+    "options": ["implements", "extends", "inherits", "super"],
+    "correctAnswer": "B"
+  },
+  {
+    "text": "What is a special method used to initialize a new object called?",
+    "options": ["Initializer", "Constructor", "Builder", "Setter"],
+    "correctAnswer": "B"
+  },
+  {
+    "text": "What keyword refers to the current object instance inside a class?",
+    "options": ["self", "this", "current", "me"],
+    "correctAnswer": "B"
+  },
+  {
+    "text": "Which keyword prevents a class from being subclassed?",
+    "options": ["static", "final", "private", "sealed"],
+    "correctAnswer": "B"
+  },
+  {
+    "text": "What is the default value of a boolean instance variable?",
+    "options": ["true", "false", "0", "null"],
+    "correctAnswer": "B"
+  },
+  {
+    "text": "Which keyword makes a variable or method belong to the class rather than an instance?",
+    "options": ["final", "static", "public", "abstract"],
+    "correctAnswer": "B"
+  },
+  {
+    "text": "Which collection does NOT allow duplicate elements?",
+    "options": ["ArrayList", "LinkedList", "HashSet", "Vector"],
+    "correctAnswer": "C"
+  },
+  {
+    "text": "Which operator is used to compare object references?",
+    "options": ["equals()", "==", "compareTo()", "="],
+    "correctAnswer": "B"
+  },
+  {
+    "text": "Which keyword is used to catch exceptions in Java?",
+    "options": ["throw", "except", "catch", "handle"],
+    "correctAnswer": "C"
+  },
+  {
+    "text": "What does JVM stand for?",
+    "options": [
+      "Java Virtual Machine",
+      "Java Visual Model",
+      "Java Verified Method",
+      "Java Variable Manager"
+    ],
+    "correctAnswer": "A"
+  },
+  {
+    "text": "Which interface must a class implement to be used with a for-each loop?",
+    "options": ["Iterator", "Iterable", "Comparable", "Serializable"],
+    "correctAnswer": "B"
+  }
+]
