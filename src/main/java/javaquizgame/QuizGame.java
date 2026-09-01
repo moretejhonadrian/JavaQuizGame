@@ -3,18 +3,10 @@ package javaquizgame;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
-import java.sql.*;
-import java.time.Instant;
 import java.util.*;
 import java.util.List;
 
-
 public class QuizGame extends GUI {
-    
-    // ---------- Database ----------
-    private Database database;
-    private final Connection dbConnection;
-    private static final String ID_PREFIX = "PLY-";
 
     // Master question banks (never mutated directly; copied + shuffled each play)
     private final QuestionBank questionBank;
@@ -24,51 +16,169 @@ public class QuizGame extends GUI {
 
     private int currentIndex = 0;
     private int score = 0;
-    private final String playerName = "";
-    private final String playerId = "";
-    private long currentSessionId = -1; // -1 = no session currently open
+    private String playerName = "";
+    private String playerId = "";
     private final Random random = new Random();
 
     public QuizGame() {
         super("GROUP 2 FINAL PROJECT");
         
-        database = new Database();
-        dbConnection = database.getConnection();
-
         questionBank = new QuestionBank();
         
         buildUI();
-
-        // Safety net: if the program is closed (X button, IDE stop, terminal
-        // close) while a quiz is in progress, mark that session ABANDONED
-        // instead of leaving it as a resumable/repeatable IN_PROGRESS row.
-        Runtime.getRuntime().addShutdownHook(
-            new Thread(() -> database.abandonActiveSessionOnExit(currentSessionId))
-        );
 
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(700, 660);
         setMinimumSize(new Dimension(600, 580));
         setLocationRelativeTo(null);
     }
+
+    // ---------- Login / Logout ----------
+    @Override
+    protected void handleSignup() {
+        String name = signupNameField.getText().trim();
+
+        if (name.isEmpty()) {
+            JOptionPane.showMessageDialog(
+                this,
+                "Please enter your name!"
+            );
+            return;
+        }
+
+        //save the name
+        String id = leaderboard.addPlayer(name);
+
+        if (id != null) {
+            
+            scoreboard.addPlayer(id, name);
+            
+            // Save current player
+            currentPlayer.set(name, id, 0, -1);
+
+            JOptionPane.showMessageDialog(
+                this,
+                "Player created successfully!"
+            );
+
+            // Remove old START card
+            cardPanel.remove(0);
+
+            // Rebuild START card
+            cardPanel.add(buildStartPanel(), START_CARD, 0);
+
+            // Show updated START card
+            cardLayout.show(cardPanel, START_CARD);
+
+            cardPanel.revalidate();
+            cardPanel.repaint();
+        } 
+    }
     
-    // ---------- Quiz logic ----------
+    @Override
+    protected void handleLogin() {
+        String name = loginNameField.getText().trim();
+
+        if (name.isEmpty()) {
+
+            JOptionPane.showMessageDialog(
+                this,
+                "Please enter your name!"
+            );
+
+            return;
+        }
+
+        // Find player in offline database
+        Player player = leaderboard.getPlayer(name);
+
+        if (player != null) {
+
+            // Set logged-in player
+            currentPlayer.set(
+                player.player_name,
+                player.id,
+                player.total_score,
+                player.rank
+            );
+
+            JOptionPane.showMessageDialog(
+                this,
+                "Welcome back, "
+                + player.player_name + "!"
+            );
+
+            // Rebuild start screen
+            cardPanel.remove(0);
+
+            cardPanel.add(
+                buildStartPanel(),
+                START_CARD,
+                0
+            );
+
+            cardLayout.show(
+                cardPanel,
+                START_CARD
+            );
+
+            cardPanel.revalidate();
+            cardPanel.repaint();
+
+        } 
+    }
+    
+    @Override
+    protected void handleLogout() {
+        int choice = JOptionPane.showConfirmDialog(
+            this,
+            "Are you sure you want to logout?",
+            "Logout",
+            JOptionPane.YES_NO_OPTION
+        );
+
+        if (choice == JOptionPane.YES_OPTION) {
+
+            currentPlayer.logout();
+
+            // Remove old start panel
+            cardPanel.remove(0);
+
+            // Rebuild it without the logged-in player
+            cardPanel.add(buildStartPanel(), START_CARD, 0);
+
+            cardLayout.show(cardPanel,START_CARD);
+
+            cardPanel.revalidate();
+            cardPanel.repaint();
+        }
+    }
+    
+// ---------- Quiz logic ----------
+    
+    @Override
+    protected void handleReturn() {
+        int choice = JOptionPane.showConfirmDialog(
+            this,
+            "Are you sure you want to leave the quiz?",
+            "Return",
+            JOptionPane.YES_NO_OPTION
+        );
+
+        if (choice == JOptionPane.YES_OPTION) {
+            cardLayout.show(cardPanel, START_CARD);
+        }
+    }
+
     @Override
     protected void startQuiz() {
-//        String enteredName = playerNameField.getText().trim();
-//        if (enteredName.isEmpty()) {
-//            JOptionPane.showMessageDialog(this,
-//                    "Please enter your name before starting.",
-//                    "Name required", JOptionPane.WARNING_MESSAGE);
-//            return;
-//        }
-//        playerName = enteredName;
-//        playerId = getOrCreatePlayerId(playerName);
-
+        playerName = currentPlayer.player.player_name;
+        playerId = currentPlayer.player.id;
+        
         score = 0;
         currentIndex = 0;
         activeQuestions = buildShuffledQuestionSet();
-        currentSessionId = beginQuizSession(playerId, playerName);
+        //currentSessionId = beginQuizSession(playerId, playerName);
 
         playerTagLabel.setText("Player: " + playerName + "   |   ID: " + playerId);
 
@@ -101,7 +211,7 @@ public class QuizGame extends GUI {
         List<String> opts = new ArrayList<>(Arrays.asList(original.options));
         Collections.shuffle(opts, random);
         int newCorrectIndex = opts.indexOf(correctAnswerText);
-        return new Question(original.questionText, opts.toArray(new String[0]), newCorrectIndex);
+        return new Question(original.questionText, opts.toArray(String[]::new), newCorrectIndex);
     }
 
     private void showQuestion() {
@@ -214,117 +324,67 @@ public class QuizGame extends GUI {
                         + "<br>You scored " + score + " out of " + TOTAL_QUESTIONS
                         + "<br>(" + String.format("%.0f", percentage) + "%)</div></html>");
 
-        completeQuizSession(currentSessionId, score);
-        currentSessionId = -1; // session is closed out - nothing left to abandon
+        scoreboard.addScore(playerId, "All", score);
         cardLayout.show(cardPanel, RESULT_CARD);
     }
-
-    // ---------- Database: players ----------
-
-    /**
-     * Looks up the player's ID by name (case-insensitive, via SQLite's
-     * COLLATE NOCASE). If the name has never played before, a new sequential
-     * ID is generated and stored permanently in the "players" table - so it
-     * is remembered the next time the program runs, since the database file
-     * is never dropped or recreated.
-     */
-    private String getOrCreatePlayerId(String name) {
-        String selectSql = "SELECT player_id FROM players WHERE player_name = ? COLLATE NOCASE";
-        try (PreparedStatement ps = dbConnection.prepareStatement(selectSql)) {
-            ps.setString(1, name);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getString("player_id");
-                }
-            }
-        } catch (SQLException ex) {
-            database.showDbError("looking up your player record", ex);
-        }
-
-        int nextNumber = 1;
-        try (Statement stmt = dbConnection.createStatement();
-             ResultSet rs = stmt.executeQuery("SELECT COUNT(*) AS total FROM players")) {
-            if (rs.next()) {
-                nextNumber = rs.getInt("total") + 1;
-            }
-        } catch (SQLException ex) {
-            database.showDbError("counting registered players", ex);
-        }
-
-        String newId = ID_PREFIX + String.format("%04d", nextNumber);
-        String insertSql = "INSERT INTO players (player_id, player_name) VALUES (?, ?)";
-        try (PreparedStatement ps = dbConnection.prepareStatement(insertSql)) {
-            ps.setString(1, newId);
-            ps.setString(2, name);
-            ps.executeUpdate();
-        } catch (SQLException ex) {
-            database.showDbError("registering your player ID", ex);
-        }
-        return newId;
-    }
-
-    // ---------- Database: quiz sessions / leaderboard ----------
-
-    /** Opens a new IN_PROGRESS session row and returns its generated ID. */
-    private long beginQuizSession(String id, String name) {
-        String sql = "INSERT INTO quiz_sessions (player_id, player_name, score, total_questions, status, started_at) "
-                + "VALUES (?, ?, 0, ?, 'IN_PROGRESS', ?)";
-        try (PreparedStatement ps = dbConnection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            ps.setString(1, id);
-            ps.setString(2, name);
-            ps.setInt(3, TOTAL_QUESTIONS);
-            ps.setString(4, Instant.now().toString());
-            ps.executeUpdate();
-            try (ResultSet keys = ps.getGeneratedKeys()) {
-                if (keys.next()) {
-                    return keys.getLong(1);
-                }
-            }
-        } catch (SQLException ex) {
-            database.showDbError("starting a new quiz session", ex);
-        }
-        return -1;
-    }
-
-    /** Marks a session COMPLETED with its final score - this is what counts for the leaderboard. */
-    private void completeQuizSession(long sessionId, int finalScore) {
-        if (sessionId == -1) {
-            return;
-        }
-        String sql = "UPDATE quiz_sessions SET score = ?, status = 'COMPLETED', finished_at = ? WHERE session_id = ?";
-        try (PreparedStatement ps = dbConnection.prepareStatement(sql)) {
-            ps.setInt(1, finalScore);
-            ps.setString(2, Instant.now().toString());
-            ps.setLong(3, sessionId);
-            ps.executeUpdate();
-        } catch (SQLException ex) {
-            database.showDbError("saving your final score", ex);
-        }
-    }
-
-    /** Reads the top completed sessions straight from the database. */
+    
     @Override
     protected void refreshLeaderboard() {
+
         leaderboardModel.setRowCount(0);
-        String sql = "SELECT player_id, player_name, score FROM quiz_sessions "
-                + "WHERE status = 'COMPLETED' ORDER BY score DESC, finished_at ASC LIMIT 20";
 
-        boolean any = false;
-        try (Statement stmt = dbConnection.createStatement();
-             ResultSet rs = stmt.executeQuery(sql)) {
-            int rank = 1;
-            while (rs.next()) {
-                any = true;
-                leaderboardModel.addRow(new Object[]{rank, rs.getString("player_id"),
-                        rs.getString("player_name"), rs.getInt("score")});
-                rank++;
+        try {
+            Player current = currentPlayer.getPlayer();
+
+            // only update online leaderboard if a player is logged in
+            if (current != null) {
+
+                // get highest local score
+                int highestScore =
+                    scoreboard.getHighestScore(current.id);
+
+                // update player's score online
+                leaderboard.updateTotalScore(
+                    current.id,
+                    highestScore
+                );
             }
-        } catch (SQLException ex) {
-            database.showDbError("loading the leaderboard", ex);
-        }
 
-        if (!any) {
-            leaderboardModel.addRow(new Object[]{"-", "-", "No scores yet", "-"});
+            // get all players from online database
+            ArrayList<Player> players =
+                leaderboard.getAllPlayers();
+
+            // add online players to table
+            for (Player player : players) {
+
+                leaderboardModel.addRow(new Object[] {
+                    player.rank,
+                    player.id,
+                    player.player_name,
+                    player.total_score
+                });
+            }
+
+        } catch (Exception e) {
+
+            System.out.println(
+                "Leaderboard unavailable: "
+                + e.getMessage()
+            );
+            
+            JOptionPane.showMessageDialog(
+                this,
+                "Leaderboard unavailable: "
+                + e.getMessage()
+            );
+
+            // show something in the table instead of crashing
+            leaderboardModel.addRow(new Object[] {
+                "-",
+                "-",
+                "No internet connection",
+                "-"
+            });
         }
     }
 
@@ -339,7 +399,7 @@ public class QuizGame extends GUI {
     public static void main(String[] args) {
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch (Exception ignored) {
+        } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | UnsupportedLookAndFeelException ignored) {
             // fall back to default look and feel
         }
 

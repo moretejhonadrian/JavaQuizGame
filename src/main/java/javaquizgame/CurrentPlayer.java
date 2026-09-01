@@ -2,8 +2,12 @@ package javaquizgame;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonIOException;
+import com.google.gson.JsonSyntaxException;
+import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.io.IOException;
 
 public class CurrentPlayer {
 
@@ -14,34 +18,60 @@ public class CurrentPlayer {
 
     public CurrentPlayer() {
 
-        try (FileReader reader = new FileReader(FILE_PATH)) {
+        File file = new File(FILE_PATH);
 
-            Gson gson = new Gson();
+        try {
+            // create parent folders if they don't exist
+            File parent = file.getParentFile();
 
-            player = gson.fromJson(reader, Player.class);
+            if (parent != null && !parent.exists()) {
+                parent.mkdirs();
+            }
 
-        } catch (Exception e) {
-            // No saved player yet
+            // create empty JSON file if it doesn't exist
+            if (!file.exists()) {
+                file.createNewFile();
+
+                try (FileWriter writer = new FileWriter(file)) {
+                    writer.write("{}");
+                }
+
+                player = null;
+                return;
+            }
+
+            // read existing player data
+            try (FileReader reader = new FileReader(file)) {
+                Gson gson = new Gson();
+                player = gson.fromJson(reader, Player.class);
+            }
+
+        } catch (JsonIOException | JsonSyntaxException | IOException e) {
+            System.err.println(
+                "Error loading player data: " + e.getMessage()
+            );
+
             player = null;
         }
     }
-
     public Player getPlayer() {
         return player;
     }
 
     public boolean isSet() {
-        return player != null && player.id != null;
+        return player != null
+            && player.id != null
+            && !player.id.isBlank();
     }
 
-    public void set(String name, String id) {
+    public void set(String name, String id, int total_score, int rank) {
 
         // Create the Player object
         player = new Player(
             id,
             name,
-            0,
-            -1
+            total_score,
+            rank
         );
 
         save();
@@ -61,6 +91,23 @@ public class CurrentPlayer {
             System.err.println(
                 "Error saving player data: " + e.getMessage()
             );
+        }
+    }
+    
+    public void logout() {
+
+        player = null;
+
+        File file = new File(FILE_PATH);
+
+        if (file.exists()) {
+            if (file.delete()) {
+                System.out.println("Player logged out.");
+            } else {
+                System.err.println(
+                    "Could not delete player data."
+                );
+            }
         }
     }
 }

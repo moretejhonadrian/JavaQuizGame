@@ -5,9 +5,11 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.UUID;
+import javax.swing.JOptionPane;
 
 public class Leaderboard {
 
@@ -23,7 +25,7 @@ public class Leaderboard {
         password = dotenv.get("SUPABASE_DB_PASSWORD");
     }
 
-    public void updateTotalScore(String id, int score) {
+    public void updateTotalScore(String id, int score) throws Exception {
 
         String sql =
             "UPDATE players SET total_score = ? WHERE id = ?";
@@ -44,10 +46,8 @@ public class Leaderboard {
                 System.out.println("Player not found!");
             }
 
-        } catch (Exception e) {
-            System.err.println("Errors updating score: " + e.getMessage());
-            System.out.println("Error: " + e);
         }
+        
     }
     
     // Returns the generated player's ID
@@ -62,14 +62,13 @@ public class Leaderboard {
             PreparedStatement statement = conn.prepareStatement(sql)
         ) {
 
-            // Set the ? values FIRST
             statement.setString(1, name);
             statement.setInt(2, 0);
 
-            // THEN execute
             try (ResultSet results = statement.executeQuery()) {
 
                 if (results.next()) {
+
                     String id = results.getString("id");
 
                     System.out.println("Player added successfully!");
@@ -79,8 +78,20 @@ public class Leaderboard {
                 }
             }
 
-        } catch (Exception e) {
-            System.err.println("Error adding player: " + e.getMessage());
+        } catch (SQLException e) {
+
+            // PostgreSQL error code for UNIQUE constraint violation
+            if ("23505".equals(e.getSQLState())) {
+                JOptionPane.showMessageDialog(
+                    null,
+                    "That player name already exists!"
+                );
+            } else {
+                JOptionPane.showMessageDialog(
+                    null,
+                    "Error adding player: " + e.getMessage()
+                );
+            }
         }
 
         return null;
@@ -95,7 +106,7 @@ public class Leaderboard {
             PreparedStatement statement = conn.prepareStatement(sql)
         ) {
 
-            statement.setObject(1, java.util.UUID.fromString(id));
+            statement.setObject(1, UUID.fromString(id));
 
             int rows = statement.executeUpdate();
 
@@ -110,7 +121,7 @@ public class Leaderboard {
         }
     }
     
-    public ArrayList<Player> getAllPlayers() {
+    public ArrayList<Player> getAllPlayers() throws Exception {
 
         ArrayList<Player> players = new ArrayList<>();
 
@@ -143,28 +154,65 @@ public class Leaderboard {
                 players.add(player);
             }
 
-        } catch (Exception e) {
-            System.err.println("Error getting players: " + e.getMessage());
         }
 
         return players;
     }
     
+    public Player getPlayer(String name) {
+
+        String sql = """
+            SELECT id, player_name, total_score, rank
+            FROM players
+            WHERE player_name = ?
+            LIMIT 1
+            """;
+
+        try (
+            Connection conn = DriverManager.getConnection(url, user, password);
+            PreparedStatement statement = conn.prepareStatement(sql)
+        ) {
+
+            statement.setString(1, name);
+
+            try (ResultSet result = statement.executeQuery()) {
+
+                if (result.next()) {
+
+                    return new Player(
+                        result.getString("id"),
+                        result.getString("player_name"),
+                        result.getInt("total_score"),
+                        result.getInt("rank")
+                    );
+                }
+            }
+
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(
+                null,
+                "Error getting player: " + e.getMessage()
+            );
+        }
+
+        return null;
+    }
+    
     public static void main(String[] args) {
 
         Leaderboard leaderboard = new Leaderboard();
-        ArrayList<Player> players = leaderboard.getAllPlayers();
+        //ArrayList<Player> players = leaderboard.getAllPlayers();
 
-        for (int i = 0; i < players.size(); i++) {
-            Player player = players.get(i);
-            
-            System.out.println("ID: " + player.id);
-            System.out.println("Username: " + player.player_name);
-            System.out.println("Total Score: " + player.total_score);
-            System.out.println("Rank: " + player.rank);
-        }
+//        for (int i = 0; i < players.size(); i++) {
+//            Player player = players.get(i);
+//            
+//            System.out.println("ID: " + player.id);
+//            System.out.println("Username: " + player.player_name);
+//            System.out.println("Total Score: " + player.total_score);
+//            System.out.println("Rank: " + player.rank);
+//        }
         
-        leaderboard.updateTotalScore("baef7a3e-aeaf-4a36-955f-d0c6420467d4", 10000);
+        //leaderboard.updateTotalScore("baef7a3e-aeaf-4a36-955f-d0c6420467d4", 10000);
         
         leaderboard.addPlayer("Player100");
         

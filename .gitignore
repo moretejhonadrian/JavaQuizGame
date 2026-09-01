@@ -8,3 +8,4 @@ target/
 *.class
 .env
 src/main/java/files/playerData.json
+quizgame.db

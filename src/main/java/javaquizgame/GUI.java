@@ -8,6 +8,7 @@ import java.awt.event.ActionListener;
 import javax.swing.table.DefaultTableCellRenderer;
 
 public abstract class GUI extends JFrame implements ActionListener {  
+    
     protected static final int QUESTIONS_PER_STAGE = 10;
     protected static final int STAGE_COUNT = 3;
     protected static final int TOTAL_QUESTIONS = QUESTIONS_PER_STAGE * STAGE_COUNT;
@@ -40,6 +41,7 @@ public abstract class GUI extends JFrame implements ActionListener {
     
     // ---------- UI components ----------
     protected JTextField signupNameField;
+    protected JTextField loginNameField;
     protected JTextField playerNameField;
     protected JLabel stageLabel;
     protected JLabel questionNumberLabel;
@@ -63,6 +65,7 @@ public abstract class GUI extends JFrame implements ActionListener {
 
     protected static final String START_CARD = "START";
     protected static final String SIGNUP_CARD = "SIGNUP";
+    protected static final String LOGIN_CARD = "LOGIN";
     protected static final String QUIZ_CARD = "QUIZ";
     protected static final String RESULT_CARD = "RESULT";
     protected static final String LEADERBOARD_CARD = "LEADERBOARD";
@@ -70,11 +73,13 @@ public abstract class GUI extends JFrame implements ActionListener {
     //Needed Data
     protected Leaderboard leaderboard;
     protected CurrentPlayer currentPlayer;
+    protected Scoreboard scoreboard;
 
     public GUI(String title) {
         super(title);
         
         leaderboard = new Leaderboard();
+        scoreboard = new Scoreboard();
         currentPlayer = new CurrentPlayer();
     }
     
@@ -129,6 +134,7 @@ public abstract class GUI extends JFrame implements ActionListener {
 
         cardPanel.add(buildStartPanel(), START_CARD);
         cardPanel.add(buildSignupPanel(), SIGNUP_CARD);
+        cardPanel.add(buildLoginPanel(), LOGIN_CARD);
         cardPanel.add(buildQuizPanel(), QUIZ_CARD);
         cardPanel.add(buildResultPanel(), RESULT_CARD);
         cardPanel.add(buildLeaderboardPanel(), LEADERBOARD_CARD);
@@ -138,25 +144,24 @@ public abstract class GUI extends JFrame implements ActionListener {
         add(cardPanel, BorderLayout.CENTER);
     }
 
-    private JPanel buildStartPanel() {
+    protected JPanel buildStartPanel() {
         
-        JButton signupButton = makeButton(
-            "SIGN UP",
-            GREEN,
-            Color.WHITE,
-            14
-        );
-
-        signupButton.addActionListener(e ->
-            cardLayout.show(cardPanel, SIGNUP_CARD)
-        );
+        JButton signupButton = makeButton("SIGN UP", GREEN, Color.WHITE, 14);
+        signupButton.addActionListener(e -> cardLayout.show(cardPanel, SIGNUP_CARD));
+        
+        JButton loginButton = makeButton("LOGIN", STAGE_COLORS[0], Color.WHITE, 14);
+        loginButton.addActionListener(e -> cardLayout.show(cardPanel, LOGIN_CARD));
+        
+        JButton logoutButton = makeButton("LOGOUT", RED, Color.WHITE, 14);
+        logoutButton.addActionListener(e -> handleLogout());
+        
         JPanel outer = new JPanel(new GridBagLayout());
         outer.setBackground(BG_DARK);
 
         RoundedPanel card = new RoundedPanel(CARD_BG, 28);
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
         card.setBorder(new EmptyBorder(40, 50, 40, 50));
-        card.setPreferredSize(new Dimension(460, 470));
+        card.setPreferredSize(new Dimension(460, 520));
 
         JLabel title = makeLabel("Technical Education and Skills Development Authority", Font.BOLD, 13, TEXT_MUTED);
         title.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -166,7 +171,14 @@ public abstract class GUI extends JFrame implements ActionListener {
         title2.setAlignmentX(Component.CENTER_ALIGNMENT);
         title2.setBorder(new EmptyBorder(2, 0, 16, 0));
 
-        JLabel title3 = makeLabel("JAVA PROGRAMMING QUIZ GAME", Font.BOLD, 24, STAGE_COLORS[0]);
+        JLabel title3 = new JLabel(
+            "<html><div style='text-align: center;'>"
+            + "JAVA PROGRAMMING<br>QUIZ GAME"
+            + "</div></html>"
+        );
+
+        title3.setFont(new Font(FONT_FAMILY, Font.BOLD, 24));
+        title3.setForeground(STAGE_COLORS[0]);
         title3.setAlignmentX(Component.CENTER_ALIGNMENT);
         title3.setHorizontalAlignment(SwingConstants.CENTER);
 
@@ -174,13 +186,6 @@ public abstract class GUI extends JFrame implements ActionListener {
                 Font.PLAIN, 14, TEXT_MUTED);
         subtitle.setAlignmentX(Component.CENTER_ALIGNMENT);
         subtitle.setBorder(new EmptyBorder(10, 0, 30, 0));
-
-        JLabel nameLabel = makeLabel("Enter your Name:", Font.BOLD, 15, TEXT_DARK);
-        nameLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-        JLabel nameHintLabel = makeLabel("(your Player ID is assigned automatically)", Font.PLAIN, 11, TEXT_MUTED);
-        nameHintLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        nameHintLabel.setBorder(new EmptyBorder(2, 0, 0, 0));
 
         playerNameField = new JTextField();
         playerNameField.setMaximumSize(new Dimension(260, 42));
@@ -204,39 +209,49 @@ public abstract class GUI extends JFrame implements ActionListener {
         card.add(title3);
         card.add(subtitle);
         
-        //card.add(nameLabel);
-        //card.add(nameHintLabel);
-        //card.add(Box.createRigidArea(new Dimension(0, 8)));
-
-        //card.add(playerNameField);
-        
-        card.add(Box.createRigidArea(new Dimension(0, 12)));
+        card.add(Box.createRigidArea(new Dimension(0, 10)));
 
         if (currentPlayer.isSet()) {
 
-            JLabel playerNameLabel = makeLabel(
-                currentPlayer.getPlayer().player_name,
-                Font.BOLD,
-                18,
-                GREEN
-            );
+        Player player = currentPlayer.getPlayer();
 
-            playerNameLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        JLabel welcomeLabel = new JLabel(
+            "<html>Welcome, <b><font color='#27AE60'>"
+            + player.player_name
+            + "!</font></b></html>"
+        );
 
-            card.add(playerNameLabel);
-            
-            card.add(Box.createRigidArea(new Dimension(0, 12)));
+        welcomeLabel.setFont(new Font(FONT_FAMILY, Font.PLAIN, 16));
+        welcomeLabel.setForeground(TEXT_MUTED);
+        welcomeLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        welcomeLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
-            card.add(startButton);
+        card.add(welcomeLabel);
 
-            card.add(Box.createRigidArea(new Dimension(0, 12)));
+        JLabel messageLabel = makeLabel("Ready to test your Java skills?", Font.PLAIN, 13, TEXT_MUTED);
+        messageLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-            card.add(viewLeaderboardButton);
+        card.add(welcomeLabel);
+        card.add(Box.createRigidArea(new Dimension(0, 4)));
+        card.add(messageLabel);
+        card.add(Box.createRigidArea(new Dimension(0, 30)));
+        card.add(startButton);
+        card.add(Box.createRigidArea(new Dimension(0, 12)));
+        card.add(viewLeaderboardButton);
+        card.add(Box.createRigidArea(new Dimension(0, 12)));
+        card.add(logoutButton);
 
-        } else {
+    } else {
 
-            card.add(signupButton);
-        }
+        JLabel messageLabel = makeLabel("Create an account or log in to start!", Font.PLAIN, 13, TEXT_MUTED);
+        messageLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        card.add(messageLabel);
+        card.add(Box.createRigidArea(new Dimension(0, 20)));
+        card.add(signupButton);
+        card.add(Box.createRigidArea(new Dimension(0, 12)));
+        card.add(loginButton);
+    }
 
         outer.add(card);
         return outer;
@@ -252,120 +267,91 @@ public abstract class GUI extends JFrame implements ActionListener {
         card.setBorder(new EmptyBorder(40, 50, 40, 50));
         card.setPreferredSize(new Dimension(460, 400));
 
-        JLabel title = makeLabel(
-            "SIGN UP",
-            Font.BOLD,
-            26,
-            STAGE_COLORS[0]
-        );
+        JLabel title = makeLabel("SIGN UP", Font.BOLD, 26, STAGE_COLORS[0]);
 
         title.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        JLabel nameLabel = makeLabel(
-            "Enter your Name:",
-            Font.BOLD,
-            15,
-            TEXT_DARK
-        );
-
+        JLabel nameLabel = makeLabel("Enter your Name:", Font.BOLD, 15, TEXT_DARK);
         nameLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         signupNameField = new JTextField();
 
-        signupNameField.setMaximumSize(
-            new Dimension(260, 42)
-        );
+        signupNameField.setMaximumSize(new Dimension(260, 42));
 
-        signupNameField.setFont(
-            new Font(FONT_FAMILY, Font.PLAIN, 16)
-        );
+        signupNameField.setFont(new Font(FONT_FAMILY, Font.PLAIN, 16));
 
-        signupNameField.setAlignmentX(
-            Component.CENTER_ALIGNMENT
-        );
+        signupNameField.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        JButton signupButton = makeButton(
-            "CREATE PLAYER",
-            GREEN,
-            Color.WHITE,
-            15
-        );
+        JButton signupButton = makeButton("CREATE PLAYER", GREEN, Color.WHITE, 15);
 
-        signupButton.addActionListener(e -> {
+        signupButton.addActionListener(e -> handleSignup());
 
-            String name = signupNameField.getText().trim();
+        JButton backButton = makeButton("BACK", GRAY_BTN, Color.WHITE, 14);
 
-            if (name.isEmpty()) {
-                JOptionPane.showMessageDialog(
-                    this,
-                    "Please enter your name!"
-                );
-                return;
-            }
+        backButton.addActionListener(e -> cardLayout.show(cardPanel, START_CARD));
 
-            String id = leaderboard.addPlayer(name);
+        card.add(title);
+        card.add(Box.createRigidArea(new Dimension(0, 30)));
+        card.add(nameLabel);
+        card.add(Box.createRigidArea(new Dimension(0, 8)));
+        card.add(signupNameField);
+        card.add(Box.createRigidArea(new Dimension(0, 25)));
+        card.add(signupButton);
+        card.add(Box.createRigidArea(new Dimension(0, 12)));
+        card.add(backButton);
+        outer.add(card);
 
-            if (id != null) {
+        return outer;
+    }
+    
+    private JPanel buildLoginPanel() {
 
-                // Save current player
-                currentPlayer.set(name, id);
+        JPanel outer = new JPanel(new GridBagLayout());
+        outer.setBackground(BG_DARK);
 
-                JOptionPane.showMessageDialog(
-                    this,
-                    "Player created successfully!"
-                );
+        RoundedPanel card = new RoundedPanel(CARD_BG, 28);
+        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
+        card.setBorder(new EmptyBorder(40, 50, 40, 50));
+        card.setPreferredSize(new Dimension(460, 400));
 
-                // Remove old START card
-                cardPanel.remove(0);
+        JLabel title = makeLabel("LOGIN", Font.BOLD, 26, STAGE_COLORS[0]);
 
-                // Rebuild START card
-                cardPanel.add(buildStartPanel(), START_CARD, 0);
+        title.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-                // Show updated START card
-                cardLayout.show(cardPanel, START_CARD);
+        JLabel nameLabel = makeLabel("Enter your Name:", Font.BOLD, 15, TEXT_DARK);
 
-                cardPanel.revalidate();
-                cardPanel.repaint();
-            }
-        });
+        nameLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        JButton backButton = makeButton(
-            "BACK",
-            GRAY_BTN,
-            Color.WHITE,
-            14
-        );
+        loginNameField = new JTextField();
+
+        loginNameField.setMaximumSize(new Dimension(260, 42));
+
+        loginNameField.setFont(new Font(FONT_FAMILY, Font.PLAIN, 16));
+
+        loginNameField.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        JButton loginButton = makeButton("LOGIN", STAGE_COLORS[0], Color.WHITE, 15);
+
+        loginButton.addActionListener(e -> handleLogin());
+
+        JButton backButton = makeButton("BACK", GRAY_BTN, Color.WHITE, 14);
 
         backButton.addActionListener(
-            e -> cardLayout.show(cardPanel, START_CARD)
+            e -> cardLayout.show(
+                cardPanel,
+                START_CARD
+            )
         );
 
         card.add(title);
-
-        card.add(Box.createRigidArea(
-            new Dimension(0, 30)
-        ));
-
+        card.add(Box.createRigidArea(new Dimension(0, 30)));
         card.add(nameLabel);
-
-        card.add(Box.createRigidArea(
-            new Dimension(0, 8)
-        ));
-
-        card.add(signupNameField);
-
-        card.add(Box.createRigidArea(
-            new Dimension(0, 25)
-        ));
-
-        card.add(signupButton);
-
-        card.add(Box.createRigidArea(
-            new Dimension(0, 12)
-        ));
-
+        card.add(Box.createRigidArea(new Dimension(0, 8)));
+        card.add(loginNameField);
+        card.add(Box.createRigidArea(new Dimension(0, 25)));
+        card.add(loginButton);
+        card.add(Box.createRigidArea(new Dimension(0, 12)));
         card.add(backButton);
-
         outer.add(card);
 
         return outer;
@@ -380,12 +366,26 @@ public abstract class GUI extends JFrame implements ActionListener {
         card.setBorder(new EmptyBorder(24, 36, 26, 36));
         card.setPreferredSize(new Dimension(600, 500));
 
+        // Return button
+        JButton returnButton = new JButton("←");
+        returnButton.setFont(new Font(FONT_FAMILY, Font.BOLD, 20));
+        returnButton.setForeground(TEXT_DARK);
+        returnButton.setBackground(CARD_BG);
+        returnButton.setBorderPainted(false);
+        returnButton.setFocusPainted(false);
+        returnButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
+        returnButton.addActionListener(e -> handleReturn());
+
+        // Player label
         playerTagLabel = makeLabel("Player: -", Font.PLAIN, 12, TEXT_MUTED);
         playerTagLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
+        // Stage label
         stageLabel = makeLabel("STAGE 1: JAVA BASICS", Font.BOLD, 17, STAGE_COLORS[0]);
         stageLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
+        // Progress bar
         progressBar = new JProgressBar(0, TOTAL_QUESTIONS);
         progressBar.setValue(0);
         progressBar.setForeground(STAGE_COLORS[0]);
@@ -393,15 +393,29 @@ public abstract class GUI extends JFrame implements ActionListener {
         progressBar.setBorderPainted(false);
         progressBar.setPreferredSize(new Dimension(100, 8));
 
+        // Top row with return button
+        JPanel topPanel = new JPanel(new BorderLayout());
+        topPanel.setOpaque(false);
+        topPanel.add(returnButton, BorderLayout.WEST);
+
+        // Header
         JPanel headerPanel = new JPanel();
         headerPanel.setOpaque(false);
         headerPanel.setLayout(new BoxLayout(headerPanel, BoxLayout.Y_AXIS));
+
+        playerTagLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        stageLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        progressBar.setAlignmentX(Component.CENTER_ALIGNMENT);
+
         headerPanel.add(playerTagLabel);
         headerPanel.add(Box.createRigidArea(new Dimension(0, 4)));
         headerPanel.add(stageLabel);
         headerPanel.add(Box.createRigidArea(new Dimension(0, 8)));
         headerPanel.add(progressBar);
-        card.add(headerPanel, BorderLayout.NORTH);
+
+        topPanel.add(headerPanel, BorderLayout.CENTER);
+
+        card.add(topPanel, BorderLayout.NORTH);
 
         JPanel centerPanel = new JPanel();
         centerPanel.setOpaque(false);
@@ -577,7 +591,10 @@ public abstract class GUI extends JFrame implements ActionListener {
         }
     }
     
+    protected abstract void handleSignup();
+    protected abstract void handleLogin();
+    protected abstract void handleLogout();
     protected abstract void startQuiz();
-
+    protected abstract void handleReturn();
     protected abstract void refreshLeaderboard();       
 }

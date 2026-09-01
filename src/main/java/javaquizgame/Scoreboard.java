@@ -25,11 +25,20 @@ public class Scoreboard {
 
     private void createTable() {
 
-        String sql = """
+        String playersSql = """
+            CREATE TABLE IF NOT EXISTS players (
+                player_id TEXT PRIMARY KEY,
+                player_name TEXT NOT NULL UNIQUE
+            )
+            """;
+
+        String scoreboardSql = """
             CREATE TABLE IF NOT EXISTS scoreboard (
                 score_id TEXT PRIMARY KEY,
+                player_id TEXT NOT NULL,
                 quiz_stage TEXT NOT NULL,
-                score INTEGER NOT NULL
+                score INTEGER NOT NULL,
+                FOREIGN KEY (player_id) REFERENCES players(id)
             )
             """;
 
@@ -38,10 +47,16 @@ public class Scoreboard {
             Statement statement = conn.createStatement()
         ) {
 
-            statement.execute(sql);
+            // create players table
+            statement.execute(playersSql);
+
+            // create scoreboard table
+            statement.execute(scoreboardSql);
+
             System.out.println("Offline database is ready.");
 
         } catch (SQLException e) {
+
             System.err.println(
                 "Error creating offline database: "
                 + e.getMessage()
@@ -49,30 +64,30 @@ public class Scoreboard {
         }
     }
 
-    public void addScore(String quizStage, int score) {
+    public void addScore(String player_id, String quiz_stage, int score) {
 
-        String scoreId = UUID.randomUUID().toString();
+        String score_id = UUID.randomUUID().toString();
 
         String sql = """
             INSERT INTO scoreboard
-            (score_id, quiz_stage, score)
-            VALUES (?, ?, ?)
+            (score_id, player_id, quiz_stage, score)
+            VALUES (?, ?, ?, ?)
             """;
 
         try (
             Connection conn = connect();
-            PreparedStatement statement =
-                    conn.prepareStatement(sql)
+            PreparedStatement statement = conn.prepareStatement(sql)
         ) {
 
-            statement.setString(1, scoreId);
-            statement.setString(2, quizStage);
-            statement.setInt(3, score);
+            statement.setString(1, score_id);
+            statement.setString(2, player_id);
+            statement.setString(3, quiz_stage);
+            statement.setInt(4, score);
 
             statement.executeUpdate();
 
             System.out.println(
-                "Score saved! ID: " + scoreId
+                "Score saved! ID: " + score_id
             );
 
         } catch (SQLException e) {
@@ -83,10 +98,10 @@ public class Scoreboard {
         }
     }
     
-    public void deleteScores() {
+    public void deleteScores(String player_id) {
 
         String sql = """
-            DELETE FROM scoreboard
+            DELETE FROM scoreboard WHERE player_id = ?
             """;
 
         try (
@@ -94,7 +109,9 @@ public class Scoreboard {
             PreparedStatement statement =
                     conn.prepareStatement(sql)
         ) {
-
+            
+            statement.setObject(1, UUID.fromString(player_id));
+            
             int rows = statement.executeUpdate();
 
             System.out.println(
@@ -110,32 +127,30 @@ public class Scoreboard {
         }
     }
     
-    public Map<String, Integer> showAllScores() {
+    public Map<String, Integer> showAllScores(String player_id) {
 
-        Map<String, Integer> scores =
-                new LinkedHashMap<>();
+        Map<String, Integer> scores = new LinkedHashMap<>();
 
         String sql = """
             SELECT score_id, score
             FROM scoreboard
+            WHERE player_id = ?
             """;
 
         try (
             Connection conn = connect();
-            PreparedStatement statement =
-                    conn.prepareStatement(sql)
+            PreparedStatement statement = conn.prepareStatement(sql)
         ) {
+            
+            statement.setObject(1, UUID.fromString(player_id));
 
-            try (ResultSet result =
-                    statement.executeQuery()) {
+            try (ResultSet result = statement.executeQuery()) {
 
                 while (result.next()) {
 
-                    String id =
-                            result.getString("score_id");
+                    String id = result.getString("score_id");
 
-                    int score =
-                            result.getInt("score");
+                    int score = result.getInt("score");
 
                     scores.put(id, score);
                 }
@@ -152,38 +167,83 @@ public class Scoreboard {
         return scores;
     }
     
-    public static void main(String[] args) {
-        Scoreboard scoreboard = new Scoreboard();
-        
-        scoreboard.addScore("All", 25);
-        scoreboard.addScore("All", 24);
-        
-        Map<String, Integer> scores = scoreboard.showAllScores();
-        
-        for (Map.Entry<String, Integer> entry : scores.entrySet()) {
-            System.out.println(
-                entry.getKey() + ": " + entry.getValue()
+    public int getHighestScore(String player_id) {
+
+        String sql = """
+            SELECT MAX(score) AS highest_score
+            FROM scoreboard
+            WHERE player_id = ?
+            """;
+
+        try (
+            Connection conn = connect();
+            PreparedStatement statement = conn.prepareStatement(sql);
+        ) {
+            
+            statement.setObject(1, UUID.fromString(player_id));
+            
+            try (ResultSet result = statement.executeQuery()) {
+                if (result.next()) {
+                    int highestScore = result.getInt("highest_score");
+
+                    if (result.wasNull()) {
+                        return 0;
+                    }
+
+                    return highestScore;
+                }
+            }
+
+        } catch (SQLException e) {
+
+            System.err.println(
+                "Error getting highest score: "
+                + e.getMessage()
             );
         }
-        
-        scoreboard.deleteScores();
-        
-        scores = scoreboard.showAllScores();
-        
-        
-        if (scores.isEmpty()) {
-            System.out.println("Already deleted");
-        }
-        
-        scoreboard.addScore("All", 25);
-        scoreboard.addScore("All", 24);
-        
-        scores = scoreboard.showAllScores();
-        
-        for (Map.Entry<String, Integer> entry : scores.entrySet()) {
-            System.out.println(
-                entry.getKey() + ": " + entry.getValue()
-            );
+
+        return 0;
+    }
+    
+    public boolean addPlayer(String playerId, String name) {
+
+        String sql = """
+            INSERT INTO players
+            (player_id, player_name)
+            VALUES (?, ?)
+            """;
+
+        try (
+            Connection conn = connect();
+            PreparedStatement statement = conn.prepareStatement(sql)
+        ) {
+
+            statement.setString(1, playerId);
+            statement.setString(2, name);
+
+            statement.executeUpdate();
+
+            System.out.println("Player saved! Name: " + name);
+
+            return true;
+
+        } catch (SQLException e) {
+
+            // SQLite error code for UNIQUE constraint violation
+            if (e.getMessage().contains("UNIQUE constraint failed")) {
+
+                System.err.println(
+                    "That player name already exists!"
+                );
+
+            } else {
+
+                System.err.println(
+                    "Error saving player: " + e.getMessage()
+                );
+            }
+
+            return false;
         }
     }
 }
