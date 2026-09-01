@@ -50,28 +50,40 @@ public class Leaderboard {
         }
     }
     
-    public void addPlayer(String name) {
+    // Returns the generated player's ID
+    public String addPlayer(String name) {
 
         String sql =
-            "INSERT INTO players (player_name, total_score) VALUES (?, ?)";
+            "INSERT INTO players (player_name, total_score) " +
+            "VALUES (?, ?) RETURNING id";
 
         try (
             Connection conn = DriverManager.getConnection(url, user, password);
             PreparedStatement statement = conn.prepareStatement(sql)
         ) {
 
+            // Set the ? values FIRST
             statement.setString(1, name);
             statement.setInt(2, 0);
 
-            int rows = statement.executeUpdate();
+            // THEN execute
+            try (ResultSet results = statement.executeQuery()) {
 
-            if (rows > 0) {
-                System.out.println("Player added successfully!");
+                if (results.next()) {
+                    String id = results.getString("id");
+
+                    System.out.println("Player added successfully!");
+                    System.out.println("Player ID: " + id);
+
+                    return id;
+                }
             }
 
         } catch (Exception e) {
             System.err.println("Error adding player: " + e.getMessage());
         }
+
+        return null;
     }
 
     public void deletePlayer(String id) {

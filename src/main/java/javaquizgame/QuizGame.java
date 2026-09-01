@@ -1,94 +1,33 @@
 package javaquizgame;
 
 import javax.swing.*;
-import javax.swing.border.EmptyBorder;
-import javax.swing.table.DefaultTableCellRenderer;
-import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.sql.*;
 import java.time.Instant;
 import java.util.*;
 import java.util.List;
 
 
-public class QuizGame extends JFrame implements ActionListener {
-
-    // ---------- Color palette ----------
-    private static final Color BG_DARK = new Color(22, 26, 46);
-    private static final Color CARD_BG = new Color(250, 250, 252);
-    private static final Color TEXT_DARK = new Color(30, 32, 46);
-    private static final Color TEXT_MUTED = new Color(105, 110, 130);
-    private static final Color TEXT_LIGHT = new Color(230, 232, 245);
-    private static final Color GOLD = new Color(255, 190, 40);
-    private static final Color GREEN = new Color(39, 174, 96);
-    private static final Color RED = new Color(214, 69, 65);
-    private static final Color GRAY_BTN = new Color(120, 126, 148);
-
-    // Per-stage accent colors and titles
-    private static final Color[] STAGE_COLORS = {
-            new Color(41, 128, 185),   // Stage 1 - blue
-            new Color(155, 89, 182),   // Stage 2 - purple
-            new Color(230, 126, 34)    // Stage 3 - orange
-    };
-    private static final String[] STAGE_TITLES = {
-            "STAGE 1: JAVA BASICS",
-            "STAGE 2: OBJECT-ORIENTED PROGRAMMING",
-            "STAGE 3: COLLECTIONS & ADVANCED TOPICS"
-    };
-
-    private static final String FONT_FAMILY = "Segoe UI";
+public class QuizGame extends GUI {
     
     // ---------- Database ----------
     private Database database;
-    private Connection dbConnection;
+    private final Connection dbConnection;
     private static final String ID_PREFIX = "PLY-";
 
-    private static final int QUESTIONS_PER_STAGE = 10;
-    private static final int STAGE_COUNT = 3;
-    private static final int TOTAL_QUESTIONS = QUESTIONS_PER_STAGE * STAGE_COUNT;
-
     // Master question banks (never mutated directly; copied + shuffled each play)
-    private QuestionBank questionBank;
+    private final QuestionBank questionBank;
 
     // Active shuffled question list for the current play-through
     private List<Question> activeQuestions = new ArrayList<>();
 
     private int currentIndex = 0;
     private int score = 0;
-    private String playerName = "";
-    private String playerId = "";
+    private final String playerName = "";
+    private final String playerId = "";
     private long currentSessionId = -1; // -1 = no session currently open
     private final Random random = new Random();
-
-    // ---------- UI components ----------
-    private JTextField playerNameField;
-
-    private JLabel stageLabel;
-    private JLabel questionNumberLabel;
-    private JLabel questionLabel;
-    private JProgressBar progressBar;
-    private JRadioButton[] optionButtons;
-    private ButtonGroup optionGroup;
-    private JButton nextButton;
-    private JLabel scoreLabel;
-    private JLabel feedbackLabel;
-    private JLabel playerTagLabel;
-
-    private JLabel resultLabel;
-    private JLabel resultDetailLabel;
-    private JLabel resultBadgeLabel;
-
-    private DefaultTableModel leaderboardModel;
-
-    private JPanel cardPanel;
-    private CardLayout cardLayout;
-
-    private static final String START_CARD = "START";
-    private static final String QUIZ_CARD = "QUIZ";
-    private static final String RESULT_CARD = "RESULT";
-    private static final String LEADERBOARD_CARD = "LEADERBOARD";
 
     public QuizGame() {
         super("GROUP 2 FINAL PROJECT");
@@ -113,352 +52,18 @@ public class QuizGame extends JFrame implements ActionListener {
         setLocationRelativeTo(null);
     }
     
-    // ---------- Small styling helpers ----------
-
-    /** A JPanel that paints a solid rounded-rectangle background. */
-    private static class RoundedPanel extends JPanel {
-        private final Color bg;
-        private final int radius;
-
-        RoundedPanel(Color bg, int radius) {
-            this.bg = bg;
-            this.radius = radius;
-            setOpaque(false);
-        }
-
-        @Override
-        protected void paintComponent(Graphics g) {
-            Graphics2D g2 = (Graphics2D) g.create();
-            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            g2.setColor(bg);
-            g2.fillRoundRect(0, 0, getWidth(), getHeight(), radius, radius);
-            g2.dispose();
-            super.paintComponent(g);
-        }
-    }
-
-    private JButton makeButton(String text, Color bg, Color fg, int fontSize) {
-        JButton button = new JButton(text);
-        button.setFont(new Font(FONT_FAMILY, Font.BOLD, fontSize));
-        button.setBackground(bg);
-        button.setForeground(fg);
-        button.setFocusPainted(false);
-        button.setBorderPainted(false);
-        button.setOpaque(true);
-        button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        button.setBorder(new EmptyBorder(12, 26, 12, 26));
-        button.setAlignmentX(Component.CENTER_ALIGNMENT);
-        return button;
-    }
-
-    private JLabel makeLabel(String text, int style, int size, Color color) {
-        JLabel label = new JLabel(text);
-        label.setFont(new Font(FONT_FAMILY, style, size));
-        label.setForeground(color);
-        return label;
-    }
-
-    // ---------- UI construction ----------
-    private void buildUI() {
-        cardLayout = new CardLayout();
-        cardPanel = new JPanel(cardLayout);
-        cardPanel.setBackground(BG_DARK);
-
-        cardPanel.add(buildStartPanel(), START_CARD);
-        cardPanel.add(buildQuizPanel(), QUIZ_CARD);
-        cardPanel.add(buildResultPanel(), RESULT_CARD);
-        cardPanel.add(buildLeaderboardPanel(), LEADERBOARD_CARD);
-
-        getContentPane().setBackground(BG_DARK);
-        setLayout(new BorderLayout());
-        add(cardPanel, BorderLayout.CENTER);
-    }
-
-    private JPanel buildStartPanel() {
-        JPanel outer = new JPanel(new GridBagLayout());
-        outer.setBackground(BG_DARK);
-
-        RoundedPanel card = new RoundedPanel(CARD_BG, 28);
-        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
-        card.setBorder(new EmptyBorder(40, 50, 40, 50));
-        card.setPreferredSize(new Dimension(460, 470));
-
-        JLabel title = makeLabel("Technical Education and Skills Development Authority", Font.BOLD, 13, TEXT_MUTED);
-        title.setAlignmentX(Component.CENTER_ALIGNMENT);
-        title.setHorizontalAlignment(SwingConstants.CENTER);
-
-        JLabel title2 = makeLabel("NRG INFO-TECH INC.", Font.BOLD, 14, TEXT_DARK);
-        title2.setAlignmentX(Component.CENTER_ALIGNMENT);
-        title2.setBorder(new EmptyBorder(2, 0, 16, 0));
-
-        JLabel title3 = makeLabel("JAVA PROGRAMMING QUIZ GAME", Font.BOLD, 24, STAGE_COLORS[0]);
-        title3.setAlignmentX(Component.CENTER_ALIGNMENT);
-        title3.setHorizontalAlignment(SwingConstants.CENTER);
-
-        JLabel subtitle = makeLabel("3 stages | 10 questions each ",
-                Font.PLAIN, 14, TEXT_MUTED);
-        subtitle.setAlignmentX(Component.CENTER_ALIGNMENT);
-        subtitle.setBorder(new EmptyBorder(10, 0, 30, 0));
-
-        JLabel nameLabel = makeLabel("Enter your Name:", Font.BOLD, 15, TEXT_DARK);
-        nameLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-        JLabel nameHintLabel = makeLabel("(your Player ID is assigned automatically)", Font.PLAIN, 11, TEXT_MUTED);
-        nameHintLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        nameHintLabel.setBorder(new EmptyBorder(2, 0, 0, 0));
-
-        playerNameField = new JTextField();
-        playerNameField.setMaximumSize(new Dimension(260, 42));
-        playerNameField.setFont(new Font(FONT_FAMILY, Font.PLAIN, 16));
-        playerNameField.setAlignmentX(Component.CENTER_ALIGNMENT);
-        playerNameField.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(200, 203, 214), 1, true),
-                new EmptyBorder(6, 10, 6, 10)));
-
-        JButton startButton = makeButton("START QUIZ", STAGE_COLORS[0], Color.WHITE, 16);
-        startButton.addActionListener(e -> startQuiz());
-
-        JButton viewLeaderboardButton = makeButton("VIEW LEADERBOARD", GOLD, TEXT_DARK, 14);
-        viewLeaderboardButton.addActionListener(e -> {
-            refreshLeaderboard();
-            cardLayout.show(cardPanel, LEADERBOARD_CARD);
-        });
-
-        card.add(title);
-        card.add(title2);
-        card.add(title3);
-        card.add(subtitle);
-        card.add(nameLabel);
-        card.add(nameHintLabel);
-        card.add(Box.createRigidArea(new Dimension(0, 8)));
-        card.add(playerNameField);
-        card.add(Box.createRigidArea(new Dimension(0, 26)));
-        card.add(startButton);
-        card.add(Box.createRigidArea(new Dimension(0, 12)));
-        card.add(viewLeaderboardButton);
-
-        outer.add(card);
-        return outer;
-    }
-
-    private JPanel buildQuizPanel() {
-        JPanel outer = new JPanel(new GridBagLayout());
-        outer.setBackground(BG_DARK);
-
-        RoundedPanel card = new RoundedPanel(CARD_BG, 28);
-        card.setLayout(new BorderLayout(0, 14));
-        card.setBorder(new EmptyBorder(24, 36, 26, 36));
-        card.setPreferredSize(new Dimension(600, 500));
-
-        playerTagLabel = makeLabel("Player: -", Font.PLAIN, 12, TEXT_MUTED);
-        playerTagLabel.setHorizontalAlignment(SwingConstants.CENTER);
-
-        stageLabel = makeLabel("STAGE 1: JAVA BASICS", Font.BOLD, 17, STAGE_COLORS[0]);
-        stageLabel.setHorizontalAlignment(SwingConstants.CENTER);
-
-        progressBar = new JProgressBar(0, TOTAL_QUESTIONS);
-        progressBar.setValue(0);
-        progressBar.setForeground(STAGE_COLORS[0]);
-        progressBar.setBackground(new Color(226, 228, 236));
-        progressBar.setBorderPainted(false);
-        progressBar.setPreferredSize(new Dimension(100, 8));
-
-        JPanel headerPanel = new JPanel();
-        headerPanel.setOpaque(false);
-        headerPanel.setLayout(new BoxLayout(headerPanel, BoxLayout.Y_AXIS));
-        headerPanel.add(playerTagLabel);
-        headerPanel.add(Box.createRigidArea(new Dimension(0, 4)));
-        headerPanel.add(stageLabel);
-        headerPanel.add(Box.createRigidArea(new Dimension(0, 8)));
-        headerPanel.add(progressBar);
-        card.add(headerPanel, BorderLayout.NORTH);
-
-        JPanel centerPanel = new JPanel();
-        centerPanel.setOpaque(false);
-        centerPanel.setLayout(new BoxLayout(centerPanel, BoxLayout.Y_AXIS));
-
-        questionNumberLabel = makeLabel("Question 1 of " + TOTAL_QUESTIONS, Font.PLAIN, 13, TEXT_MUTED);
-        questionNumberLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-        questionLabel = new JLabel("");
-        questionLabel.setFont(new Font(FONT_FAMILY, Font.BOLD, 19));
-        questionLabel.setForeground(TEXT_DARK);
-        questionLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        questionLabel.setBorder(new EmptyBorder(10, 0, 18, 0));
-
-        centerPanel.add(questionNumberLabel);
-        centerPanel.add(questionLabel);
-
-        String[] letters = {"A", "B", "C", "D"};
-        optionButtons = new JRadioButton[4];
-        optionGroup = new ButtonGroup();
-        for (int i = 0; i < optionButtons.length; i++) {
-            optionButtons[i] = new JRadioButton();
-            optionButtons[i].setFont(new Font(FONT_FAMILY, Font.PLAIN, 15));
-            optionButtons[i].setForeground(TEXT_DARK);
-            optionButtons[i].setOpaque(false);
-            optionButtons[i].setAlignmentX(Component.LEFT_ALIGNMENT);
-            optionButtons[i].setFocusPainted(false);
-            optionButtons[i].setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-            optionButtons[i].setBorder(new EmptyBorder(6, 4, 6, 4));
-            optionGroup.add(optionButtons[i]);
-            centerPanel.add(optionButtons[i]);
-            centerPanel.add(Box.createRigidArea(new Dimension(0, 4)));
-        }
-
-        feedbackLabel = new JLabel(" ");
-        feedbackLabel.setFont(new Font(FONT_FAMILY, Font.BOLD, 14));
-        feedbackLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        centerPanel.add(Box.createRigidArea(new Dimension(0, 10)));
-        centerPanel.add(feedbackLabel);
-
-        card.add(centerPanel, BorderLayout.CENTER);
-
-        JPanel footerPanel = new JPanel(new BorderLayout());
-        footerPanel.setOpaque(false);
-        scoreLabel = makeLabel("Score: 0 / " + TOTAL_QUESTIONS, Font.BOLD, 14, TEXT_DARK);
-
-        nextButton = makeButton("SUBMIT ANSWER", STAGE_COLORS[0], Color.WHITE, 15);
-        nextButton.addActionListener(this);
-
-        footerPanel.add(scoreLabel, BorderLayout.WEST);
-        footerPanel.add(nextButton, BorderLayout.EAST);
-
-        card.add(footerPanel, BorderLayout.SOUTH);
-
-        outer.add(card);
-        return outer;
-    }
-
-    private JPanel buildResultPanel() {
-        JPanel outer = new JPanel(new GridBagLayout());
-        outer.setBackground(BG_DARK);
-
-        RoundedPanel card = new RoundedPanel(CARD_BG, 28);
-        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
-        card.setBorder(new EmptyBorder(45, 50, 40, 50));
-        card.setPreferredSize(new Dimension(460, 420));
-
-        resultLabel = makeLabel("QUIZ COMPLETE!", Font.BOLD, 24, TEXT_DARK);
-        resultLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-        resultBadgeLabel = new JLabel("");
-        resultBadgeLabel.setFont(new Font(FONT_FAMILY, Font.BOLD, 16));
-        resultBadgeLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        resultBadgeLabel.setBorder(new EmptyBorder(14, 0, 10, 0));
-
-        resultDetailLabel = new JLabel("");
-        resultDetailLabel.setFont(new Font(FONT_FAMILY, Font.PLAIN, 16));
-        resultDetailLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        resultDetailLabel.setBorder(new EmptyBorder(6, 0, 30, 0));
-
-        JButton leaderboardButton = makeButton("VIEW LEADERBOARD", GOLD, TEXT_DARK, 14);
-        leaderboardButton.addActionListener(e -> {
-            refreshLeaderboard();
-            cardLayout.show(cardPanel, LEADERBOARD_CARD);
-        });
-
-        JButton restartButton = makeButton("PLAY AGAIN", GREEN, Color.WHITE, 14);
-        restartButton.addActionListener(e -> cardLayout.show(cardPanel, START_CARD));
-
-        card.add(resultLabel);
-        card.add(resultBadgeLabel);
-        card.add(resultDetailLabel);
-        card.add(leaderboardButton);
-        card.add(Box.createRigidArea(new Dimension(0, 12)));
-        card.add(restartButton);
-
-        outer.add(card);
-        return outer;
-    }
-
-    private JPanel buildLeaderboardPanel() {
-        JPanel outer = new JPanel(new GridBagLayout());
-        outer.setBackground(BG_DARK);
-
-        RoundedPanel card = new RoundedPanel(CARD_BG, 28);
-        card.setLayout(new BorderLayout(0, 16));
-        card.setBorder(new EmptyBorder(30, 34, 26, 34));
-        card.setPreferredSize(new Dimension(600, 480));
-
-        JLabel title = makeLabel("LEADERBOARD", Font.BOLD, 22, GOLD.darker());
-        title.setHorizontalAlignment(SwingConstants.CENTER);
-        card.add(title, BorderLayout.NORTH);
-
-        leaderboardModel = new DefaultTableModel(new Object[]{"Rank", "Player ID", "Name", "Score"}, 0) {
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return false;
-            }
-        };
-        JTable table = new JTable(leaderboardModel);
-        table.setRowHeight(30);
-        table.setFont(new Font(FONT_FAMILY, Font.PLAIN, 15));
-        table.setShowGrid(false);
-        table.setIntercellSpacing(new Dimension(0, 0));
-        table.getTableHeader().setFont(new Font(FONT_FAMILY, Font.BOLD, 14));
-        table.getTableHeader().setBackground(BG_DARK);
-        table.getTableHeader().setForeground(TEXT_LIGHT);
-        table.setDefaultRenderer(Object.class, new PodiumRowRenderer());
-        table.getColumnModel().getColumn(0).setPreferredWidth(50);
-        table.getColumnModel().getColumn(1).setPreferredWidth(90);
-        table.getColumnModel().getColumn(2).setPreferredWidth(220);
-        table.getColumnModel().getColumn(3).setPreferredWidth(70);
-
-        JScrollPane scrollPane = new JScrollPane(table);
-        scrollPane.setBorder(BorderFactory.createLineBorder(new Color(226, 228, 236)));
-        card.add(scrollPane, BorderLayout.CENTER);
-
-        JButton backButton = makeButton("BACK", GRAY_BTN, Color.WHITE, 14);
-        backButton.addActionListener(e -> cardLayout.show(cardPanel, START_CARD));
-        JPanel footer = new JPanel();
-        footer.setOpaque(false);
-        footer.add(backButton);
-        card.add(footer, BorderLayout.SOUTH);
-
-        outer.add(card);
-        return outer;
-    }
-
-    /** Highlights rank 1 (gold), rank 2 (silver) and rank 3 (bronze) rows. */
-    private static class PodiumRowRenderer extends DefaultTableCellRenderer {
-        @Override
-        public Component getTableCellRendererComponent(JTable table, Object value,
-                boolean isSelected, boolean hasFocus, int row, int column) {
-            Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-            Object rankValue = table.getValueAt(row, 0);
-            // Column 1 = Player ID, column 2 = Name -> left aligned; Rank/Score centered
-            setHorizontalAlignment((column == 1 || column == 2) ? SwingConstants.LEFT : SwingConstants.CENTER);
-
-            Color rowColor = (row % 2 == 0) ? Color.WHITE : new Color(244, 245, 249);
-            setForeground(TEXT_DARK);
-
-            if (rankValue instanceof Integer) {
-                int rank = (Integer) rankValue;
-                if (rank == 1) {
-                    rowColor = new Color(255, 223, 128);
-                } else if (rank == 2) {
-                    rowColor = new Color(224, 224, 230);
-                } else if (rank == 3) {
-                    rowColor = new Color(235, 190, 155);
-                }
-            }
-            setBackground(rowColor);
-            return c;
-        }
-    }
-
     // ---------- Quiz logic ----------
-    private void startQuiz() {
-        String enteredName = playerNameField.getText().trim();
-        if (enteredName.isEmpty()) {
-            JOptionPane.showMessageDialog(this,
-                    "Please enter your name before starting.",
-                    "Name required", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-        playerName = enteredName;
-        playerId = getOrCreatePlayerId(playerName);
+    @Override
+    protected void startQuiz() {
+//        String enteredName = playerNameField.getText().trim();
+//        if (enteredName.isEmpty()) {
+//            JOptionPane.showMessageDialog(this,
+//                    "Please enter your name before starting.",
+//                    "Name required", JOptionPane.WARNING_MESSAGE);
+//            return;
+//        }
+//        playerName = enteredName;
+//        playerId = getOrCreatePlayerId(playerName);
 
         score = 0;
         currentIndex = 0;
@@ -698,7 +303,8 @@ public class QuizGame extends JFrame implements ActionListener {
     }
 
     /** Reads the top completed sessions straight from the database. */
-    private void refreshLeaderboard() {
+    @Override
+    protected void refreshLeaderboard() {
         leaderboardModel.setRowCount(0);
         String sql = "SELECT player_id, player_name, score FROM quiz_sessions "
                 + "WHERE status = 'COMPLETED' ORDER BY score DESC, finished_at ASC LIMIT 20";
