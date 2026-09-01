@@ -8,7 +8,7 @@ import java.sql.Statement;
 import java.time.Instant;
 import javax.swing.JOptionPane;
 
-public class Database {
+public final class Database {
 
     public static final String DB_URL = "jdbc:sqlite:quizgame.db";
     public Connection dbConnection;
