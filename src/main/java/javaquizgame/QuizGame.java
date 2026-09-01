@@ -91,7 +91,7 @@ public class QuizGame extends JFrame implements ActionListener {
     private static final String LEADERBOARD_CARD = "LEADERBOARD";
 
     public QuizGame() {
-        super("Java Programming Quiz Game");
+        super("GROUP 2 FINAL PROJECT");
         
         database = new Database();
         dbConnection = database.getConnection();
