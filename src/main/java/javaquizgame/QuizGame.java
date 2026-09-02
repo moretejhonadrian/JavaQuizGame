@@ -74,7 +74,9 @@ public class QuizGame extends GUI {
 
             // Rebuild START card
             cardPanel.add(buildStartPanel(), START_CARD, 0);
-
+            
+            signupNameField.setText("");
+            
             // Show updated START card
             cardLayout.show(cardPanel, START_CARD);
 
@@ -116,7 +118,9 @@ public class QuizGame extends GUI {
             cardPanel.remove(0);
 
             cardPanel.add(buildStartPanel(), START_CARD, 0);
-
+            
+            loginNameField.setText("");
+            
             cardLayout.show(cardPanel, START_CARD);
 
             cardPanel.revalidate();
@@ -333,15 +337,23 @@ public class QuizGame extends GUI {
             // only update online leaderboard if a player is logged in
             if (current != null) {
 
-                // get highest local score
-                int highestScore =
+                // Get highest score from local database
+                int highestLocalScore =
                     scoreboard.getHighestScore(current.id);
 
-                // update player's score online
-                leaderboard.updateTotalScore(
-                    current.id,
-                    highestScore
-                );
+                // Get current player data from online database
+                Player onlinePlayer =
+                    leaderboard.getPlayer(current.id);
+
+                // Only update if local score is higher
+                if (onlinePlayer != null
+                        && highestLocalScore > onlinePlayer.total_score) {
+
+                    leaderboard.updateTotalScore(
+                        current.id,
+                        highestLocalScore
+                    );
+                }
             }
 
             // get all players from online database

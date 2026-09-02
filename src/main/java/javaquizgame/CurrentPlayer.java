@@ -10,7 +10,7 @@ public class CurrentPlayer extends Scoreboard {
     protected Player player;
 
     public CurrentPlayer() {
-        player = getCurrentPlayer();
+        this.player = getCurrentPlayer();
     }
     
     public final Player getCurrentPlayer() {
@@ -62,7 +62,7 @@ public class CurrentPlayer extends Scoreboard {
     
     public void logout(String id) {
 
-        player = null;
+        this.player = null;
 
         setNoCurrentPlayer(id);
     }
@@ -99,12 +99,13 @@ public class CurrentPlayer extends Scoreboard {
     public void setCurrentPlayer(Player p) {
         
         if (!isPlayerInDB(p.id)) {
+            System.out.println("not in the local db");
             addPlayer(p);
         } else {
             updateCurrentPlayer(p.id);
         }
         
-        player = getCurrentPlayer();
+        this.player = getCurrentPlayer();
     }
     
     public void updateCurrentPlayer(String id) {

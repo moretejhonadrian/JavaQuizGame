@@ -6,7 +6,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -246,6 +248,60 @@ public class Scoreboard {
                     "Error saving player: " + e.getMessage()
                 );
             }
+        }
+    }
+    
+    //for checking
+    public List<Player> showAllPlayers() {
+
+        List<Player> players = new ArrayList<>();
+
+        String sql = """
+            SELECT *
+            FROM players
+            """;
+
+        try (
+            Connection conn = connect();
+            PreparedStatement statement = conn.prepareStatement(sql);
+            ResultSet result = statement.executeQuery()
+        ) {
+
+            while (result.next()) {
+
+                players.add(new Player(
+                    result.getString("player_id"),
+                    result.getString("player_name"),
+                    result.getInt("total_score"),
+                    result.getInt("rank")
+                ));
+            }
+
+        } catch (SQLException e) {
+
+            System.err.println(
+                "Error getting players: "
+                + e.getMessage()
+            );
+        }
+
+        return players;
+    }
+    
+    public static void main(String[] args) {
+
+        Scoreboard scoreboard = new Scoreboard();
+
+        List<Player> players = scoreboard.showAllPlayers();
+
+        for (Player player : players) {
+
+            System.out.println(
+                player.id + " | "
+                + player.player_name + " | "
+                + player.total_score + " | "
+                + player.rank
+            );
         }
     }
 }

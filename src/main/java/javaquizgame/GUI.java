@@ -288,7 +288,10 @@ public abstract class GUI extends JFrame implements ActionListener {
 
         JButton backButton = makeButton("BACK", GRAY_BTN, Color.WHITE, 14);
 
-        backButton.addActionListener(e -> cardLayout.show(cardPanel, START_CARD));
+        backButton.addActionListener(e -> {
+            signupNameField.setText("");
+            cardLayout.show(cardPanel, START_CARD);
+        });
 
         card.add(title);
         card.add(Box.createRigidArea(new Dimension(0, 30)));
@@ -336,12 +339,10 @@ public abstract class GUI extends JFrame implements ActionListener {
 
         JButton backButton = makeButton("BACK", GRAY_BTN, Color.WHITE, 14);
 
-        backButton.addActionListener(
-            e -> cardLayout.show(
-                cardPanel,
-                START_CARD
-            )
-        );
+        backButton.addActionListener(e -> {
+            loginNameField.setText("");
+            cardLayout.show(cardPanel, START_CARD);
+        });
 
         card.add(title);
         card.add(Box.createRigidArea(new Dimension(0, 30)));
