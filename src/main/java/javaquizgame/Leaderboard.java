@@ -29,7 +29,9 @@ public class Leaderboard {
 
         String sql =
             "UPDATE players SET total_score = ? WHERE id = ?";
-
+        
+        Class.forName("org.postgresql.Driver");
+        
         try (
             Connection conn = DriverManager.getConnection(url, user, password);
             PreparedStatement statement = conn.prepareStatement(sql)
@@ -51,36 +53,53 @@ public class Leaderboard {
     }
     
     // Returns the generated player's ID
-    public String addPlayer(String name) {
+    public Player addPlayer(String name) {
 
         String sql =
             "INSERT INTO players (player_name, total_score) " +
-            "VALUES (?, ?) RETURNING id";
+            "VALUES (?, ?) " + 
+            "RETURNING id, player_name, total_score, rank";
+        
+        try {
+            Class.forName("org.postgresql.Driver");
 
-        try (
-            Connection conn = DriverManager.getConnection(url, user, password);
-            PreparedStatement statement = conn.prepareStatement(sql)
-        ) {
+            try (
+                Connection conn = DriverManager.getConnection(url, user, password);
+                PreparedStatement statement = conn.prepareStatement(sql)
+            ) {
 
-            statement.setString(1, name);
-            statement.setInt(2, 0);
+                statement.setString(1, name);
+                statement.setInt(2, 0);
 
-            try (ResultSet results = statement.executeQuery()) {
+                try (ResultSet results = statement.executeQuery()) {
 
-                if (results.next()) {
+                    if (results.next()) {
 
-                    String id = results.getString("id");
+                        String id = results.getString("id");
 
-                    System.out.println("Player added successfully!");
-                    System.out.println("Player ID: " + id);
+                        System.out.println("Player added successfully!");
+                        System.out.println("Player ID: " + id);
 
-                    return id;
+                        return new Player(
+                            results.getString("id"),
+                            results.getString("player_name"),
+                            results.getInt("total_score"),
+                            results.getInt("rank")
+                        );
+                    }
                 }
+
             }
+
+        } catch (ClassNotFoundException e) {
+
+            JOptionPane.showMessageDialog(
+                null,
+                "PostgreSQL driver not found: " + e.getMessage()
+            );
 
         } catch (SQLException e) {
 
-            // PostgreSQL error code for UNIQUE constraint violation
             if ("23505".equals(e.getSQLState())) {
                 JOptionPane.showMessageDialog(
                     null,
@@ -100,24 +119,32 @@ public class Leaderboard {
     public void deletePlayer(String id) {
 
         String sql = "DELETE FROM players WHERE id = ?";
+        
+        try {
+            Class.forName("org.postgresql.Driver");
+            try (
+                Connection conn = DriverManager.getConnection(url, user, password);
+                PreparedStatement statement = conn.prepareStatement(sql)
+            ) {
 
-        try (
-            Connection conn = DriverManager.getConnection(url, user, password);
-            PreparedStatement statement = conn.prepareStatement(sql)
-        ) {
+                statement.setObject(1, UUID.fromString(id));
 
-            statement.setObject(1, UUID.fromString(id));
+                int rows = statement.executeUpdate();
 
-            int rows = statement.executeUpdate();
+                if (rows > 0) {
+                    System.out.println("Player deleted successfully!");
+                } else {
+                    System.out.println("Player not found!");
+                }
 
-            if (rows > 0) {
-                System.out.println("Player deleted successfully!");
-            } else {
-                System.out.println("Player not found!");
+            } catch (Exception e) {
+                System.err.println("Error deleting player: " + e.getMessage());
             }
-
-        } catch (Exception e) {
-            System.err.println("Error deleting player: " + e.getMessage());
+        } catch (ClassNotFoundException e) {
+            JOptionPane.showMessageDialog(
+                null,
+                "PostgreSQL driver not found: " + e.getMessage()
+            );
         }
     }
     
@@ -130,7 +157,9 @@ public class Leaderboard {
             FROM players
             ORDER BY rank ASC
             """;
-
+        
+        Class.forName("org.postgresql.Driver");
+        
         try (
             Connection conn = DriverManager.getConnection(url, user, password);
             Statement statement = conn.createStatement();
@@ -167,31 +196,40 @@ public class Leaderboard {
             WHERE player_name = ?
             LIMIT 1
             """;
+        
+        try {
+            Class.forName("org.postgresql.Driver");
+        
+            try (
+                Connection conn = DriverManager.getConnection(url, user, password);
+                PreparedStatement statement = conn.prepareStatement(sql)
+            ) {
 
-        try (
-            Connection conn = DriverManager.getConnection(url, user, password);
-            PreparedStatement statement = conn.prepareStatement(sql)
-        ) {
+                statement.setString(1, name);
 
-            statement.setString(1, name);
+                try (ResultSet result = statement.executeQuery()) {
 
-            try (ResultSet result = statement.executeQuery()) {
+                    if (result.next()) {
 
-                if (result.next()) {
-
-                    return new Player(
-                        result.getString("id"),
-                        result.getString("player_name"),
-                        result.getInt("total_score"),
-                        result.getInt("rank")
-                    );
+                        return new Player(
+                            result.getString("id"),
+                            result.getString("player_name"),
+                            result.getInt("total_score"),
+                            result.getInt("rank")
+                        );
+                    }
                 }
-            }
 
-        } catch (SQLException e) {
+            } catch (SQLException e) {
+                JOptionPane.showMessageDialog(
+                    null,
+                    "Error getting player: " + e.getMessage()
+                );
+            }
+        } catch (ClassNotFoundException e) {
             JOptionPane.showMessageDialog(
                 null,
-                "Error getting player: " + e.getMessage()
+                "PostgreSQL driver not found: " + e.getMessage()
             );
         }
 

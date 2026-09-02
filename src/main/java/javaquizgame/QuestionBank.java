@@ -2,68 +2,104 @@ package javaquizgame;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-import java.io.FileReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 public class QuestionBank {
     
-    private final String quizzesPath = "src/main/java/files/quizzes/";
+    //save the quizzes here
+    private final List<List<Question>> quizzes = new ArrayList<>();
+    private final Map<String, String> quizzesNames = new LinkedHashMap<>();
     
-    private List<Question> stage1Bank;
-    private List<Question> stage2Bank;
-    private List<Question> stage3Bank;
-
+    private final String quizzesPath = "/files/quizzes/";
+    
     public QuestionBank() {
         loadQuestionBanks();
     }
     
     public List<Question> getQuiz(String filePath) {
-        
-        List<Question> quiz = new ArrayList<>();
-        
-        try (FileReader reader = new FileReader(filePath)) {
+
+        InputStream input = getClass().getResourceAsStream(filePath);
+
+        if (input == null) {
+            System.out.println("Quiz file not found: " + filePath);
+            return new ArrayList<>();
+        }
+
+        try (
+            InputStreamReader reader = new InputStreamReader(input)
+        ) {
 
             Gson gson = new Gson();
 
-            Type questionListType = new TypeToken<List<Question>>() {}.getType();
+            Type questionListType =
+                    new TypeToken<List<Question>>() {}.getType();
 
-            List<Question> questions = gson.fromJson(reader, questionListType);
+            List<Question> questions =
+                    gson.fromJson(reader, questionListType);
 
-            quiz.addAll(questions);
+            if (questions == null) {
+                return new ArrayList<>();
+            }
 
-            System.out.println("Loaded " + quiz.size() + " questions.");
-            
-            return quiz;
+            System.out.println(
+                    "Loaded " + questions.size() + " questions."
+            );
+
+            return questions;
 
         } catch (Exception e) {
-            System.out.println("Error loading questions: " + e.getMessage());
-            return null;
+            System.out.println(
+                    "Error loading questions: " + e
+            );
+
+            return new ArrayList<>();
         }
     }
 
     private void loadQuestionBanks() {
 
-        // ---- Stage 1: Java Basics ----
-        stage1Bank = getQuiz(quizzesPath + "Java Basics.json");
+        String[] quizFiles = {
+            "JP1 - Java Basics.json",
+            "JP2 - Object Oriented Programming.json",
+            "JP3 - Collections, Exceptions & Advanced Topics.json"
+        };
 
-        // ---- Stage 2: Object-Oriented Programming ----
-        stage2Bank = getQuiz(quizzesPath + "Object Oriented Programming.json");
+        for (String fileName : quizFiles) {
 
-        // ---- Stage 3: Collections, Exceptions & Advanced Topics ----
-       stage3Bank = getQuiz(quizzesPath + "Collections, Exceptions & Advanced Topics.json");
+            List<Question> quiz = getQuiz(quizzesPath + fileName);
+
+            if (quiz != null && !quiz.isEmpty()) {
+
+                quizzes.add(quiz);
+
+                String name = fileName.replace(".json", "");
+
+                String[] parts = name.split(" ", 2);
+
+                String key = parts[0];
+
+                quizzesNames.put(key, name);
+
+                System.out.println("Loaded quiz: " + key + " -> " + name);
+            }
+        }
     }
-
-    public List<Question> getStage1Bank() {
-        return stage1Bank;
+    
+    public List<List<Question>> getQuizzes() {
+        return quizzes;
     }
-
-    public List<Question> getStage2Bank() {
-        return stage2Bank;
+    
+    public Map<String, String> getQuizzesNames() {
+        return quizzesNames;
     }
-
-    public List<Question> getStage3Bank() {
-        return stage3Bank;
+    
+    public int getQuizzesSize() {
+        return quizzes.size();
     }
 }

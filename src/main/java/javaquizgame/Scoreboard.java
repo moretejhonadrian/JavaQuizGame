@@ -28,7 +28,10 @@ public class Scoreboard {
         String playersSql = """
             CREATE TABLE IF NOT EXISTS players (
                 player_id TEXT PRIMARY KEY,
-                player_name TEXT NOT NULL UNIQUE
+                player_name TEXT NOT NULL UNIQUE,
+                current_player BOOLEAN DEFAULT FALSE,
+                total_score INTEGER NOT NULL,
+                rank INTERGER NOT NULL
             )
             """;
 
@@ -205,12 +208,12 @@ public class Scoreboard {
         return 0;
     }
     
-    public boolean addPlayer(String playerId, String name) {
+    public void addPlayer(Player player) {
 
         String sql = """
             INSERT INTO players
-            (player_id, player_name)
-            VALUES (?, ?)
+            (player_id, player_name, current_player, total_score, rank)
+            VALUES (?, ?, ?, ?, ?)
             """;
 
         try (
@@ -218,14 +221,15 @@ public class Scoreboard {
             PreparedStatement statement = conn.prepareStatement(sql)
         ) {
 
-            statement.setString(1, playerId);
-            statement.setString(2, name);
+            statement.setString(1, player.id);
+            statement.setString(2, player.player_name);
+            statement.setInt(3, 1); //current player
+            statement.setInt(4, player.total_score);
+            statement.setInt(5, player.rank);
 
             statement.executeUpdate();
 
-            System.out.println("Player saved! Name: " + name);
-
-            return true;
+            System.out.println("Player saved! Name: " + player.player_name);
 
         } catch (SQLException e) {
 
@@ -242,8 +246,6 @@ public class Scoreboard {
                     "Error saving player: " + e.getMessage()
                 );
             }
-
-            return false;
         }
     }
 }

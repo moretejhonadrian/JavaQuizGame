@@ -213,33 +213,33 @@ public abstract class GUI extends JFrame implements ActionListener {
 
         if (currentPlayer.isSet()) {
 
-        Player player = currentPlayer.getPlayer();
+            Player player = currentPlayer.getPlayer();
 
-        JLabel welcomeLabel = new JLabel(
-            "<html>Welcome, <b><font color='#27AE60'>"
-            + player.player_name
-            + "!</font></b></html>"
-        );
+            JLabel welcomeLabel = new JLabel(
+                "<html>Welcome, <b><font color='#27AE60'>"
+                + player.player_name
+                + "!</font></b></html>"
+            );
 
-        welcomeLabel.setFont(new Font(FONT_FAMILY, Font.PLAIN, 16));
-        welcomeLabel.setForeground(TEXT_MUTED);
-        welcomeLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        welcomeLabel.setHorizontalAlignment(SwingConstants.CENTER);
+            welcomeLabel.setFont(new Font(FONT_FAMILY, Font.PLAIN, 16));
+            welcomeLabel.setForeground(TEXT_MUTED);
+            welcomeLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+            welcomeLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
-        card.add(welcomeLabel);
+            card.add(welcomeLabel);
 
-        JLabel messageLabel = makeLabel("Ready to test your Java skills?", Font.PLAIN, 13, TEXT_MUTED);
-        messageLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+            JLabel messageLabel = makeLabel("Ready to test your Java skills?", Font.PLAIN, 13, TEXT_MUTED);
+            messageLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        card.add(welcomeLabel);
-        card.add(Box.createRigidArea(new Dimension(0, 4)));
-        card.add(messageLabel);
-        card.add(Box.createRigidArea(new Dimension(0, 30)));
-        card.add(startButton);
-        card.add(Box.createRigidArea(new Dimension(0, 12)));
-        card.add(viewLeaderboardButton);
-        card.add(Box.createRigidArea(new Dimension(0, 12)));
-        card.add(logoutButton);
+            card.add(welcomeLabel);
+            card.add(Box.createRigidArea(new Dimension(0, 4)));
+            card.add(messageLabel);
+            card.add(Box.createRigidArea(new Dimension(0, 30)));
+            card.add(startButton);
+            card.add(Box.createRigidArea(new Dimension(0, 12)));
+            card.add(viewLeaderboardButton);
+            card.add(Box.createRigidArea(new Dimension(0, 12)));
+            card.add(logoutButton);
 
     } else {
 

@@ -16,14 +16,18 @@ public class QuizGame extends GUI {
 
     private int currentIndex = 0;
     private int score = 0;
-    private String playerName = "";
-    private String playerId = "";
+    private String playerName;
+    private String playerId;
     private final Random random = new Random();
 
     public QuizGame() {
         super("GROUP 2 FINAL PROJECT");
         
         questionBank = new QuestionBank();
+        
+        if (currentPlayer.player != null) {
+            setPlayer();
+        }
         
         buildUI();
 
@@ -34,6 +38,12 @@ public class QuizGame extends GUI {
     }
 
     // ---------- Login / Logout ----------
+    
+    private void setPlayer() {
+        playerName = currentPlayer.player.player_name;
+        playerId = currentPlayer.player.id;
+    } 
+    
     @Override
     protected void handleSignup() {
         String name = signupNameField.getText().trim();
@@ -46,15 +56,13 @@ public class QuizGame extends GUI {
             return;
         }
 
-        //save the name
-        String id = leaderboard.addPlayer(name);
+        //save player
+        Player player = leaderboard.addPlayer(name);
 
-        if (id != null) {
+        if (player != null) {
             
-            scoreboard.addPlayer(id, name);
-            
-            // Save current player
-            currentPlayer.set(name, id, 0, -1);
+            currentPlayer.setCurrentPlayer(player);
+            setPlayer();
 
             JOptionPane.showMessageDialog(
                 this,
@@ -89,18 +97,14 @@ public class QuizGame extends GUI {
             return;
         }
 
-        // Find player in offline database
+        // Find player in database
         Player player = leaderboard.getPlayer(name);
 
         if (player != null) {
 
             // Set logged-in player
-            currentPlayer.set(
-                player.player_name,
-                player.id,
-                player.total_score,
-                player.rank
-            );
+            currentPlayer.setCurrentPlayer(player);
+            setPlayer();
 
             JOptionPane.showMessageDialog(
                 this,
@@ -132,7 +136,7 @@ public class QuizGame extends GUI {
 
         if (choice == JOptionPane.YES_OPTION) {
 
-            currentPlayer.logout();
+            currentPlayer.logout(playerId);
 
             // Remove old start panel
             cardPanel.remove(0);
@@ -165,13 +169,9 @@ public class QuizGame extends GUI {
 
     @Override
     protected void startQuiz() {
-        playerName = currentPlayer.player.player_name;
-        playerId = currentPlayer.player.id;
-        
         score = 0;
         currentIndex = 0;
         activeQuestions = buildShuffledQuestionSet();
-        //currentSessionId = beginQuizSession(playerId, playerName);
 
         playerTagLabel.setText("Player: " + playerName + "   |   ID: " + playerId);
 
@@ -181,10 +181,11 @@ public class QuizGame extends GUI {
 
     private List<Question> buildShuffledQuestionSet() {
         List<Question> combined = new ArrayList<>();
+        List<List<Question>> quizzes = questionBank.getQuizzes();
         
-        combined.addAll(shuffledStageCopy(questionBank.getStage1Bank()));
-        combined.addAll(shuffledStageCopy(questionBank.getStage2Bank()));
-        combined.addAll(shuffledStageCopy(questionBank.getStage3Bank()));
+        for (int i = 0; i < quizzes.size(); i++) {
+            combined.addAll(shuffledStageCopy(quizzes.get(i)));
+        }
 
         return combined;
     }
