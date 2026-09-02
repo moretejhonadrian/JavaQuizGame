@@ -1,0 +1,55 @@
+[
+    {
+        "questionText": "Which collection class allows duplicate elements and maintains insertion order?",
+        "choices": ["HashSet", "TreeSet", "ArrayList", "HashMap"],
+        "correctIndex": 2
+        },
+    {
+        "questionText": "Which interface does the HashMap class implement?",
+        "choices": ["List", "Set", "Map", "Queue"],
+        "correctIndex": 2
+    },
+    {
+        "questionText": "Which keyword is used to handle exceptions in Java?",
+        "choices": ["throw", "try-catch", "catch-only", "handle"],
+        "correctIndex": 1
+    },
+    {
+        "questionText": "Which block always executes whether or not an exception occurs?",
+        "choices": ["catch", "finally", "throws", "try"],
+        "correctIndex": 1
+    },
+    {
+        "questionText": "Which of these is a checked exception in Java?",
+        "choices": ["NullPointerException", "ArithmeticException",
+        "IOException", "ArrayIndexOutOfBoundsException"],
+        "correctIndex": 2
+    },
+    {
+        "questionText": "What does the 'synchronized' keyword help prevent in multithreading?",
+        "choices": ["Memory leaks", "Race conditions", "Compilation errors", "Null pointers"],
+        "correctIndex": 1
+    },
+    {
+        "questionText": "Which Java feature allows classes to work with any data type?",
+        "choices": ["Generics", "Reflection", "Annotations", "Enums"],
+        "correctIndex": 0
+    },
+    {
+        "questionText": "Which Java 8 feature allows functional-style operations on collections?",
+        "choices": ["Lambda blocks", "Streams API", "Reflection API", "Servlets"],
+        "correctIndex": 1
+    },
+    {
+        "questionText": "What is the purpose of the 'static' keyword on a method?",
+        "choices": ["It belongs to the class rather than any instance",
+        "It can only be called once", "It runs on a separate thread",
+        "It cannot be overridden"],
+        "correctIndex": 0
+    },
+    {
+        "questionText": "Which operator is used to compare object references in Java?",
+        "choices": ["equals()", "==", ".compare()", "==="],
+        "correctIndex": 1
+    }
+]

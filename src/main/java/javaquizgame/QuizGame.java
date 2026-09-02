@@ -111,16 +111,9 @@ public class QuizGame extends GUI {
             // Rebuild start screen
             cardPanel.remove(0);
 
-            cardPanel.add(
-                buildStartPanel(),
-                START_CARD,
-                0
-            );
+            cardPanel.add(buildStartPanel(), START_CARD, 0);
 
-            cardLayout.show(
-                cardPanel,
-                START_CARD
-            );
+            cardLayout.show(cardPanel, START_CARD);
 
             cardPanel.revalidate();
             cardPanel.repaint();
@@ -207,8 +200,8 @@ public class QuizGame extends GUI {
 
     // Returns a new Question with the same text but options (and correct index) shuffled
     private Question shuffleOptions(Question original) {
-        String correctAnswerText = original.options[original.correctIndex];
-        List<String> opts = new ArrayList<>(Arrays.asList(original.options));
+        String correctAnswerText = original.choices[original.correctIndex];
+        List<String> opts = new ArrayList<>(Arrays.asList(original.choices));
         Collections.shuffle(opts, random);
         int newCorrectIndex = opts.indexOf(correctAnswerText);
         return new Question(original.questionText, opts.toArray(String[]::new), newCorrectIndex);
@@ -232,7 +225,7 @@ public class QuizGame extends GUI {
         String[] letters = {"A", "B", "C", "D"};
         optionGroup.clearSelection();
         for (int i = 0; i < optionButtons.length; i++) {
-            optionButtons[i].setText(letters[i] + ".   " + q.options[i]);
+            optionButtons[i].setText(letters[i] + ".   " + q.choices[i]);
             optionButtons[i].setEnabled(true);
         }
 
@@ -263,7 +256,7 @@ public class QuizGame extends GUI {
                 feedbackLabel.setText("Correct!");
             } else {
                 feedbackLabel.setForeground(RED);
-                feedbackLabel.setText("Incorrect. Correct answer: " + q.options[q.correctIndex]);
+                feedbackLabel.setText("Incorrect. Correct answer: " + q.choices[q.correctIndex]);
             }
 
             scoreLabel.setText("Score: " + score + " / " + TOTAL_QUESTIONS);

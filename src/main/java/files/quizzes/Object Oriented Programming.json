@@ -1,0 +1,58 @@
+[
+    {
+        "questionText": "Which keyword is used to inherit a class in Java?",
+        "choices": ["implements", "extends", "inherits", "super"],
+        "correctIndex": 1
+    },
+    {
+        "questionText": "Which keyword prevents a class from being subclassed?",
+        "choices": ["static", "private", "final", "abstract"],
+        "correctIndex": 2
+    },
+    {
+        "questionText": "What is method overriding?",
+        "choices": ["Defining multiple methods with the same name but different parameters",
+                        "Redefining a superclass method in a subclass with the same signature",
+                        "Calling a method more than once", "Hiding a variable in a subclass"],
+        "correctIndex": 1
+    },
+    {
+        "questionText": "Which keyword is used to implement an interface?",
+        "choices": ["extends", "implements", "interface", "abstract"],
+        "correctIndex": 1
+    },
+    {
+        "questionText": "Which OOP principle allows an object to take many forms?",
+        "choices": ["Encapsulation", "Inheritance", "Polymorphism", "Abstraction"],
+        "correctIndex": 2
+    },
+    {
+        "questionText": "What is the purpose of a constructor in Java?",
+        "choices": ["To destroy an object", "To initialize a new object",
+                        "To define a class", "To override a method"],
+        "correctIndex": 1
+    },
+    {
+        "questionText": "Which keyword refers to the current object instance?",
+        "choices": ["this", "self", "current", "instance"],
+        "correctIndex": 0
+    },
+    {
+        "questionText": "Can an abstract class have a constructor in Java?",
+        "choices": ["No, never", "Yes, and it runs when a subclass is instantiated",
+                        "Only if it has no fields", "Only static constructors"],
+        "correctIndex": 1
+    },
+    {
+        "questionText": "Which keyword is used to call a superclass constructor from a subclass?",
+        "choices": ["this()", "super()", "base()", "parent()"],
+        "correctIndex": 1
+    },
+    {
+        "questionText": "What is encapsulation in Java?",
+        "choices": ["Hiding internal state behind methods and controlling access",
+                        "Creating multiple classes with the same name",
+                        "Running code on multiple threads", "Converting one type to another"],
+        "correctIndex": 0
+    }
+]

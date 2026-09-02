@@ -1,0 +1,54 @@
+[
+    {
+        "questionText": "Which keyword is used to define a constant in Java?",
+        "choices": ["const", "final", "static", "readonly"],
+        "correctIndex": 1
+    },
+    {
+        "questionText": "Which of these is NOT a primitive data type in Java?",
+        "choices": ["int", "boolean", "String", "double"],
+        "correctIndex": 2
+    },
+    {
+        "questionText": "What is the default value of an int variable in Java?",
+        "choices": ["null", "undefined", "1", "0"],
+        "correctIndex": 3
+    },
+    {
+        "questionText": "Which method is the entry point of a Java application?",
+        "choices": ["start()", "main()", "run()", "init()"],
+        "correctIndex": 1
+    },
+    {
+        "questionText": "Which operator is used for string concatenation in Java?",
+        "choices": ["&", "+", "*", "%"],
+        "correctIndex": 1
+    },
+    {
+        "questionText": "Which loop is guaranteed to run at least once?",
+        "choices": ["for", "while", "do-while", "for-each"],
+        "correctIndex": 2
+    },
+    {
+        "questionText": "Which symbol is used to end most Java statements?",
+        "choices": ["colon (:)", "semicolon (;)", "period (.)", "comma (,)"],
+        "correctIndex": 1
+    },
+    {
+        "questionText": "What does JVM stand for?",
+        "choices": ["Java Virtual Machine", "Java Verified Method",
+                    "Java Variable Manager", "Java Visual Model"],
+        "correctIndex": 0
+    },
+    {
+        "questionText": "Which access modifier makes a member visible only within its own class?",
+        "choices": ["public", "protected", "private", "default"],
+        "correctIndex": 2
+    },
+    {
+        "questionText": "Which of these correctly declares an array of integers?",
+        "choices": ["int arr[] = new int[5];", "array int arr = new(5);",
+                    "int[5] arr;", "new int arr[5];"],
+        "correctIndex": 0
+    }
+]

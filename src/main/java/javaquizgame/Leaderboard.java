@@ -197,25 +197,4 @@ public class Leaderboard {
 
         return null;
     }
-    
-    public static void main(String[] args) {
-
-        Leaderboard leaderboard = new Leaderboard();
-        //ArrayList<Player> players = leaderboard.getAllPlayers();
-
-//        for (int i = 0; i < players.size(); i++) {
-//            Player player = players.get(i);
-//            
-//            System.out.println("ID: " + player.id);
-//            System.out.println("Username: " + player.player_name);
-//            System.out.println("Total Score: " + player.total_score);
-//            System.out.println("Rank: " + player.rank);
-//        }
-        
-        //leaderboard.updateTotalScore("baef7a3e-aeaf-4a36-955f-d0c6420467d4", 10000);
-        
-        leaderboard.addPlayer("Player100");
-        
-        //leaderboard.deletePlayer("28a5653d-2c63-495a-bed0-2876b5044875");
-    }
 }
