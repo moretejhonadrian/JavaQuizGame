@@ -188,7 +188,7 @@ public class Leaderboard {
         return players;
     }
     
-    public Player getPlayer(String name) {
+    public Player getPlayerByName(String name) {
 
         String sql = """
             SELECT id, player_name, total_score, rank
@@ -204,8 +204,56 @@ public class Leaderboard {
                 Connection conn = DriverManager.getConnection(url, user, password);
                 PreparedStatement statement = conn.prepareStatement(sql)
             ) {
-
+                
                 statement.setString(1, name);
+
+                try (ResultSet result = statement.executeQuery()) {
+
+                    if (result.next()) {
+
+                        return new Player(
+                            result.getString("id"),
+                            result.getString("player_name"),
+                            result.getInt("total_score"),
+                            result.getInt("rank")
+                        );
+                    }
+                }
+
+            } catch (SQLException e) {
+                JOptionPane.showMessageDialog(
+                    null,
+                    "Error getting player: " + e.getMessage()
+                );
+            }
+        } catch (ClassNotFoundException e) {
+            JOptionPane.showMessageDialog(
+                null,
+                "PostgreSQL driver not found: " + e.getMessage()
+            );
+        }
+
+        return null;
+    }
+    
+    public Player getPlayerByID(String id) {
+
+        String sql = """
+            SELECT id, player_name, total_score, rank
+            FROM players
+            WHERE id = ?
+            LIMIT 1
+            """;
+        
+        try {
+            Class.forName("org.postgresql.Driver");
+        
+            try (
+                Connection conn = DriverManager.getConnection(url, user, password);
+                PreparedStatement statement = conn.prepareStatement(sql)
+            ) {
+
+                statement.setObject(1, UUID.fromString(id));
 
                 try (ResultSet result = statement.executeQuery()) {
 

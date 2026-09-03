@@ -43,7 +43,7 @@ public class Scoreboard {
                 player_id TEXT NOT NULL,
                 quiz_stage TEXT NOT NULL,
                 score INTEGER NOT NULL,
-                FOREIGN KEY (player_id) REFERENCES players(id)
+                FOREIGN KEY (player_id) REFERENCES players(player_id)
             )
             """;
 
@@ -115,7 +115,7 @@ public class Scoreboard {
                     conn.prepareStatement(sql)
         ) {
             
-            statement.setObject(1, UUID.fromString(player_id));
+            statement.setString(1, player_id);
             
             int rows = statement.executeUpdate();
 
@@ -147,7 +147,7 @@ public class Scoreboard {
             PreparedStatement statement = conn.prepareStatement(sql)
         ) {
             
-            statement.setObject(1, UUID.fromString(player_id));
+            statement.setString(1, player_id);
 
             try (ResultSet result = statement.executeQuery()) {
 
@@ -185,7 +185,7 @@ public class Scoreboard {
             PreparedStatement statement = conn.prepareStatement(sql);
         ) {
             
-            statement.setObject(1, UUID.fromString(player_id));
+            statement.setString(1,player_id);
             
             try (ResultSet result = statement.executeQuery()) {
                 if (result.next()) {
@@ -303,5 +303,16 @@ public class Scoreboard {
                 + player.rank
             );
         }
+        
+        Map<String, Integer> scores =
+            scoreboard.showAllScores("eafe7cd8-499e-4e53-b812-656d0daa6b34");
+
+        for (Map.Entry<String, Integer> entry : scores.entrySet()) {
+            System.out.println(
+                entry.getKey() + " | " + entry.getValue()
+            );
+        }
+        
+        System.out.println(scoreboard.getHighestScore("eafe7cd8-499e-4e53-b812-656d0daa6b34"));
     }
 }

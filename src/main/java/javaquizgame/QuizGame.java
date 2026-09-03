@@ -100,7 +100,7 @@ public class QuizGame extends GUI {
         }
 
         // Find player in database
-        Player player = leaderboard.getPlayer(name);
+        Player player = leaderboard.getPlayerByName(name);
 
         if (player != null) {
 
@@ -332,25 +332,20 @@ public class QuizGame extends GUI {
         leaderboardModel.setRowCount(0);
 
         try {
-            Player current = currentPlayer.getPlayer();
-
             // only update online leaderboard if a player is logged in
-            if (current != null) {
+            if (playerId != null) {
 
                 // Get highest score from local database
-                int highestLocalScore =
-                    scoreboard.getHighestScore(current.id);
+                int highestLocalScore = scoreboard.getHighestScore(playerId);
 
                 // Get current player data from online database
-                Player onlinePlayer =
-                    leaderboard.getPlayer(current.id);
-
+                Player onlinePlayer = leaderboard.getPlayerByID(playerId);
+                
                 // Only update if local score is higher
-                if (onlinePlayer != null
-                        && highestLocalScore > onlinePlayer.total_score) {
+                if (highestLocalScore > onlinePlayer.total_score) {
 
                     leaderboard.updateTotalScore(
-                        current.id,
+                        playerId,
                         highestLocalScore
                     );
                 }
