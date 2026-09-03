@@ -73,7 +73,7 @@ public class Database {
             CREATE TABLE IF NOT EXISTS players (
                 id VARCHAR(36) PRIMARY KEY,
                 player_name VARCHAR(100) NOT NULL UNIQUE,
-                total_score INTEGER NOT NULL
+                total_points DECIMAL(10,2) NOT NULL
             )
             """;
 
@@ -81,7 +81,7 @@ public class Database {
             CREATE TABLE IF NOT EXISTS scoreboard (
                 score_id VARCHAR(36) PRIMARY KEY,
                 id VARCHAR(100) NOT NULL,
-                quiz_stage VARCHAR(100) NOT NULL,
+                quiz_id VARCHAR(10) NOT NULL,
                 score INTEGER NOT NULL,
                 FOREIGN KEY (id) REFERENCES players(id)
             )
@@ -112,7 +112,7 @@ public class Database {
     public Player addPlayer(String name) {
 
         String sql =
-            "INSERT INTO players (id, player_name, total_score) " +
+            "INSERT INTO players (id, player_name, total_points) " +
             "VALUES (?, ?, ?)";
         
         String id = UUID.randomUUID().toString();
@@ -190,16 +190,7 @@ public class Database {
 
                 try (ResultSet result = statement.executeQuery()) {
 
-                    if (result.next()) {
-
-//                        return new Player(
-//                            result.getString("id"),
-//                            result.getString("player_name"),
-//                            result.getInt("total_score"),
-//                            result.getInt("rank")
-//                        );
-                          return true;
-                    }
+                    if (result.next()) return true;
                 }
 
             } catch (SQLException e) {
@@ -244,7 +235,7 @@ public class Database {
                         return new Player(
                             result.getString("id"),
                             result.getString("player_name"),
-                            result.getInt("total_score")
+                            result.getDouble("total_points")
                         );
                     }
                 }
@@ -270,9 +261,9 @@ public class Database {
         ArrayList<Player> players = new ArrayList<>();
 
         String sql = """
-            SELECT id, player_name, total_score
+            SELECT id, player_name, total_points
             FROM players
-            ORDER BY total_score DESC
+            ORDER BY total_points DESC
             """;
         
         Class.forName("com.mysql.cj.jdbc.Driver");
@@ -287,12 +278,12 @@ public class Database {
 
                 String id = results.getString("id");
                 String playerName = results.getString("player_name");
-                int totalScore = results.getInt("total_score");
+                double totalPoints = results.getDouble("total_points");
 
                 Player player = new Player(
                     id,
                     playerName,
-                    totalScore
+                    totalPoints
                 );
 
                 players.add(player);
@@ -308,7 +299,7 @@ public class Database {
 
         String sql = """
             INSERT INTO scoreboard
-            (score_id, id, quiz_stage, score)
+            (score_id, id, quiz_id, score)
             VALUES (?, ?, ?, ?)
             """;
 
@@ -376,12 +367,12 @@ public class Database {
         return scores;
     }
     
-    public int getHighestScore(String player_id) {
+    public int getHighestScore(String player_id, String quiz_id) {
 
         String sql = """
             SELECT MAX(score) AS highest_score
             FROM scoreboard
-            WHERE id = ?
+            WHERE id = ? AND quiz_id = ?
             """;
 
         try (
@@ -390,6 +381,7 @@ public class Database {
         ) {
             
             statement.setString(1, player_id);
+            statement.setString(2, quiz_id);
             
             try (ResultSet result = statement.executeQuery()) {
                 if (result.next()) {
@@ -414,10 +406,10 @@ public class Database {
         return 0;
     }
 
-    public void updateTotalScore(String id, int score) throws Exception {
+    public void updateTotalScore(String id, double score) throws Exception {
 
         String sql =
-            "UPDATE players SET total_score = ? WHERE id = ?";
+            "UPDATE players SET total_points = ? WHERE id = ?";
         
         Class.forName("com.mysql.cj.jdbc.Driver");
         
@@ -426,8 +418,8 @@ public class Database {
             PreparedStatement statement = conn.prepareStatement(sql);
         ) {
 
-            statement.setInt(1, score);
-            statement.setObject(2, id);
+            statement.setDouble(1, score);
+            statement.setString(2, id);
 
             int rows = statement.executeUpdate();
 
@@ -443,36 +435,36 @@ public class Database {
     
     public static void main(String[] args) throws Exception {
         Database db = new Database();
-        CurrentPlayer currentPlayer = new CurrentPlayer();
+//        CurrentPlayer currentPlayer = new CurrentPlayer();
         
-        if (!db.playerExists("jhon")) {
-            System.out.println("jhon ain't here.");
-            db.addPlayer("jhon");
-        }
+//        if (!db.playerExists("jhon")) {
+//            System.out.println("jhon ain't here.");
+//            db.addPlayer("jhon");
+//        }
+//        
+//        
+//        List<Player> players = db.getAllPlayers();
+//
+//        for (Player player : players) {
+//
+//            System.out.println(
+//                player.id + " | "
+//                + player.player_name + " | "
+//                + player.total_score
+//            );
+//        }
+//        
+//        System.out.println("Current Player: ");
+//        System.out.println(currentPlayer.player.player_name);
+//        
+//        Player p = db.getPlayer("adrian");
+//        System.out.println("Player adrian's id: " + p.id);
         
-        
-        List<Player> players = db.getAllPlayers();
-
-        for (Player player : players) {
-
-            System.out.println(
-                player.id + " | "
-                + player.player_name + " | "
-                + player.total_score
-            );
-        }
-        
-        System.out.println("Current Player: ");
-        System.out.println(currentPlayer.player.player_name);
-        
-        Player p = db.getPlayer("adrian");
-        System.out.println("Player adrian's id: " + p.id);
-        
-        System.out.println("Add score: 9");
-        db.addScore("1efbd682-48b7-45a0-a6df-aba5a8349b28", "All", 90);
+//        System.out.println("Add score: 9");
+//        db.addScore("1efbd682-48b7-45a0-a6df-aba5a8349b28", "All", 90);
         
         Map<String, Integer> scores =
-            db.showAllScores("1efbd682-48b7-45a0-a6df-aba5a8349b28");
+            db.showAllScores("d05f5996-55c0-4bad-a102-66443d450f72");
 
         for (Map.Entry<String, Integer> entry : scores.entrySet()) {
             System.out.println(
@@ -480,6 +472,7 @@ public class Database {
             );
         }
         
-        System.out.println(db.getHighestScore("1efbd682-48b7-45a0-a6df-aba5a8349b28"));
+        System.out.println(
+                db.getHighestScore("d05f5996-55c0-4bad-a102-66443d450f72", "JP2"));
     }
 }

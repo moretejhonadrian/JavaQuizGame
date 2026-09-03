@@ -7,23 +7,19 @@ import java.util.*;
 import java.util.List;
 
 public class QuizGame extends GUI {
-
-    // Master question banks (never mutated directly; copied + shuffled each play)
-    private final QuestionBank questionBank;
-
+    
     // Active shuffled question list for the current play-through
     private List<Question> activeQuestions = new ArrayList<>();
 
     private int currentIndex = 0;
     private int score = 0;
+    private String quizId;
     private String playerName;
     private String playerId;
     private final Random random = new Random();
 
     public QuizGame() {
         super("GROUP 2 FINAL PROJECT");
-        
-        questionBank = new QuestionBank();
         
         if (currentPlayer.player != null) {
             setPlayer();
@@ -68,20 +64,11 @@ public class QuizGame extends GUI {
                 this,
                 "Player created successfully!"
             );
-
-            // Remove old START card
-            cardPanel.remove(0);
-
-            // Rebuild START card
-            cardPanel.add(buildStartPanel(), START_CARD, 0);
             
             signupNameField.setText("");
             
-            // Show updated START card
-            cardLayout.show(cardPanel, START_CARD);
-
-            cardPanel.revalidate();
-            cardPanel.repaint();
+            // Rebuild start screen
+            rebuildScreen(buildStartPanel(), START_CARD, 0);
         } 
     }
     
@@ -113,18 +100,11 @@ public class QuizGame extends GUI {
                 "Welcome back, "
                 + player.player_name + "!"
             );
-
-            // Rebuild start screen
-            cardPanel.remove(0);
-
-            cardPanel.add(buildStartPanel(), START_CARD, 0);
             
             loginNameField.setText("");
             
-            cardLayout.show(cardPanel, START_CARD);
-
-            cardPanel.revalidate();
-            cardPanel.repaint();
+            // Rebuild start screen
+            rebuildScreen(buildStartPanel(), START_CARD, 0);
 
         } else {
             JOptionPane.showMessageDialog(
@@ -148,16 +128,8 @@ public class QuizGame extends GUI {
 
             currentPlayer.logout();
 
-            // Remove old start panel
-            cardPanel.remove(0);
-
-            // Rebuild it without the logged-in player
-            cardPanel.add(buildStartPanel(), START_CARD, 0);
-
-            cardLayout.show(cardPanel,START_CARD);
-
-            cardPanel.revalidate();
-            cardPanel.repaint();
+            // Rebuild start screen
+            rebuildScreen(buildStartPanel(), START_CARD, 0);
         }
     }
     
@@ -178,34 +150,33 @@ public class QuizGame extends GUI {
     }
 
     @Override
-    protected void startQuiz() {
+    protected void startQuiz(int quizIndex, String id) { 
         score = 0;
         currentIndex = 0;
-        activeQuestions = buildShuffledQuestionSet();
-
+        quizId = id;
+        activeQuestions = buildShuffledQuestionSet(quizIndex);
+        
         playerTagLabel.setText("Player: " + playerName + "   |   ID: " + playerId);
 
         cardLayout.show(cardPanel, QUIZ_CARD);
         showQuestion();
     }
 
-    private List<Question> buildShuffledQuestionSet() {
-        List<Question> combined = new ArrayList<>();
-        List<List<Question>> quizzes = questionBank.getQuizzes();
+    private List<Question> buildShuffledQuestionSet(int quizIndex) {
+        List<Question> quiz = questionBank.getQuizzes().get(quizIndex);
         
-        for (int i = 0; i < quizzes.size(); i++) {
-            combined.addAll(shuffledStageCopy(quizzes.get(i)));
-        }
-
-        return combined;
+        return shuffledStageCopy(quiz);
     }
 
     private List<Question> shuffledStageCopy(List<Question> bank) {
         List<Question> copy = new ArrayList<>();
+        
         for (Question q : bank) {
             copy.add(shuffleOptions(q));
         }
+        
         Collections.shuffle(copy, random);
+        
         return copy;
     }
 
@@ -220,17 +191,17 @@ public class QuizGame extends GUI {
 
     private void showQuestion() {
         Question q = activeQuestions.get(currentIndex);
-        int stageIndex = currentIndex / QUESTIONS_PER_STAGE; // 0-based
-        int questionInStage = (currentIndex % QUESTIONS_PER_STAGE) + 1;
-        Color accent = STAGE_COLORS[stageIndex];
+        int quizIndex = currentIndex / QUESTIONS_PER_QUIZ; // 0-based
+        int questionInQuiz = (currentIndex % QUESTIONS_PER_QUIZ) + 1;
+        Color accent = STAGE_COLORS[quizIndex];
 
-        stageLabel.setText(STAGE_TITLES[stageIndex]);
+        stageLabel.setText(questionBank.getQuizTitle(quizId));
         stageLabel.setForeground(accent);
         progressBar.setForeground(accent);
         progressBar.setValue(currentIndex);
 
-        questionNumberLabel.setText("Question " + questionInStage + " of " + QUESTIONS_PER_STAGE
-                + "  (Overall: " + (currentIndex + 1) + " of " + TOTAL_QUESTIONS + ")");
+        questionNumberLabel.setText("Question " + questionInQuiz + " of " + QUESTIONS_PER_QUIZ);
+                //+ "  (Overall: " + (currentIndex + 1) + " of " + TOTAL_QUESTIONS + ")");
         questionLabel.setText("<html>" + q.questionText + "</html>");
 
         String[] letters = {"A", "B", "C", "D"};
@@ -243,7 +214,7 @@ public class QuizGame extends GUI {
         feedbackLabel.setText(" ");
         nextButton.setText("SUBMIT ANSWER");
         nextButton.setBackground(accent);
-        scoreLabel.setText("Score: " + score + " / " + TOTAL_QUESTIONS);
+        scoreLabel.setText("Score: " + score + " / " + QUESTIONS_PER_QUIZ);
     }
 
     private void handleSubmitOrNext() {
@@ -270,23 +241,15 @@ public class QuizGame extends GUI {
                 feedbackLabel.setText("Incorrect. Correct answer: " + q.choices[q.correctIndex]);
             }
 
-            scoreLabel.setText("Score: " + score + " / " + TOTAL_QUESTIONS);
-            nextButton.setText(currentIndex == TOTAL_QUESTIONS - 1 ? "FINISH QUIZ" : "NEXT QUESTION");
+            scoreLabel.setText("Score: " + score + " / " + QUESTIONS_PER_QUIZ);
+            nextButton.setText(currentIndex == QUESTIONS_PER_QUIZ - 1 ? "FINISH QUIZ" : "NEXT QUESTION");
         } else {
             currentIndex++;
 
-            if (currentIndex >= TOTAL_QUESTIONS) {
-                progressBar.setValue(TOTAL_QUESTIONS);
+            if (currentIndex >= QUESTIONS_PER_QUIZ) {
+                progressBar.setValue(QUESTIONS_PER_QUIZ);
                 finishQuiz();
                 return;
-            }
-
-            // Announce the start of a new stage
-            if (currentIndex == QUESTIONS_PER_STAGE || currentIndex == QUESTIONS_PER_STAGE * 2) {
-                int newStage = (currentIndex / QUESTIONS_PER_STAGE) + 1;
-                JOptionPane.showMessageDialog(this,
-                        "Stage " + (newStage - 1) + " complete! Starting Stage " + newStage + ".",
-                        "Stage Complete", JOptionPane.INFORMATION_MESSAGE);
             }
 
             showQuestion();
@@ -303,7 +266,7 @@ public class QuizGame extends GUI {
     }
 
     private void finishQuiz() {
-        double percentage = (score * 100.0) / TOTAL_QUESTIONS;
+        double percentage = (score * 100.0) / QUESTIONS_PER_QUIZ;
 
         String badgeText;
         Color badgeColor;
@@ -325,12 +288,22 @@ public class QuizGame extends GUI {
 
         resultDetailLabel.setText(
                 "<html><div style='text-align:center;'>" + playerName + " (ID: " + playerId + ")"
-                        + "<br>You scored " + score + " out of " + TOTAL_QUESTIONS
+                        + "<br>You scored " + score + " out of " + QUESTIONS_PER_QUIZ
                         + "<br>(" + String.format("%.0f", percentage) + "%)</div></html>");
 
-        db.addScore(playerId, "All", score);
+        db.addScore(playerId, quizId, score);
         cardLayout.show(cardPanel, RESULT_CARD);
     }
+    
+    
+    /*
+        Ranking basis:
+
+        quizResultPercentage = score / 10 * 100
+
+        totalPoints += quizResultPercentage / quizzesSize
+    
+    */
     
     @Override
     protected void refreshLeaderboard() {
@@ -338,26 +311,20 @@ public class QuizGame extends GUI {
         leaderboardModel.setRowCount(0);
 
         try {
-            // only update online leaderboard if a player is logged in
-//            if (playerId != null) {
-
-                // Get highest score from local database
-                int highestLocalScore = db.getHighestScore(playerId);
-
-                db.updateTotalScore(playerId, highestLocalScore);
- //           }
-            // get all players from online database
+            
+            updateTotalPoints();
+                
             List<Player> players = db.getAllPlayers();
             
             int rank = 1;
-            // add online players to table
+            
             for (Player player : players) {
 
                 leaderboardModel.addRow(new Object[] {
                     rank,
                     player.id,
                     player.player_name,
-                    player.total_score
+                    player.total_points
                 });
                 
                 rank++;
@@ -385,7 +352,80 @@ public class QuizGame extends GUI {
             });
         }
     }
+    
+    private void updateTotalPoints() {
+        Map<String, String> quizzesNames = questionBank.getQuizzesNames();
+        
+        double totalPoints = 0;
+        
+        for (Map.Entry<String, String> quiz : quizzesNames.entrySet()) {
+            
+            String quizKey = quiz.getKey();
+            
+            double highestScore = db.getHighestScore(playerId, quizKey);
+            
+            double quizResultPercentage = (highestScore / QUESTIONS_PER_QUIZ) * 100;
+            
+            totalPoints += quizResultPercentage / questionBank.getQuizzesSize();
+        }
+        
+        try {
+            //update totalpoints of user
+            db.updateTotalScore(playerId, totalPoints);
 
+        } catch (Exception ex) {
+
+            System.getLogger(QuizGame.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
+        }
+        
+    }
+    
+    @Override
+    protected void quizzesButtons(Map<String, String> quizzesNames, JPanel contentPanel) {
+        
+        for (Map.Entry<String, String> quiz : quizzesNames.entrySet()) {
+
+            String quizKey = quiz.getKey();
+            String quizName = quiz.getValue();
+            
+            int quizIndex = Integer.parseInt(quizKey.substring(2)) - 1;
+
+            // Quiz button
+            JButton quizButton = makeButton(quizName, STAGE_COLORS[0], Color.WHITE, 15);
+
+            quizButton.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+            quizButton.addActionListener(e -> {
+                startQuiz(quizIndex, quizKey);
+            });
+
+            // Progress bar
+            JProgressBar bar = new JProgressBar(0, QUESTIONS_PER_QUIZ);
+           
+            int highestScore = db.getHighestScore(playerId, quizKey);
+            
+            bar.setValue(highestScore);
+            bar.setString(
+                    highestScore + " / " + QUESTIONS_PER_QUIZ
+            );
+            bar.setStringPainted(true);
+            bar.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+            // Container for button + progress bar
+            JPanel quizPanel = new JPanel();
+            quizPanel.setLayout(new BoxLayout(quizPanel, BoxLayout.Y_AXIS));
+            quizPanel.setOpaque(false);
+            quizPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+            quizPanel.add(quizButton);
+            quizPanel.add(Box.createVerticalStrut(5));
+            quizPanel.add(bar);
+
+            contentPanel.add(quizPanel);
+            contentPanel.add(Box.createVerticalStrut(15));
+        }
+    }
+    
     @Override
     public void actionPerformed(ActionEvent e) {
         if (e.getSource() == nextButton) {

@@ -41,7 +41,7 @@ public class CurrentPlayer {
                     writer.write("{}");
                 }
 
-                player = null;
+                this.player = null;
                 return;
             }
 
@@ -50,7 +50,7 @@ public class CurrentPlayer {
 
                 Gson gson = new Gson();
 
-                player = gson.fromJson(
+                this.player = gson.fromJson(
                     reader,
                     Player.class
                 );
@@ -67,12 +67,12 @@ public class CurrentPlayer {
                 + e.getMessage()
             );
 
-            player = null;
+            this.player = null;
         }
     }
 
     public Player getPlayer() {
-        return player;
+        return this.player;
     }
 
     public boolean isSet() {
@@ -84,10 +84,10 @@ public class CurrentPlayer {
 
     public void set(Player p) {
 
-        player = new Player(
+        this.player = new Player(
             p.id,
             p.player_name,
-            p.total_score
+            p.total_points
         );
 
         save();
@@ -125,7 +125,7 @@ public class CurrentPlayer {
 
     public void logout() {
 
-        player = null;
+        this.player = null;
 
         File file = new File(FILE_PATH);
 
