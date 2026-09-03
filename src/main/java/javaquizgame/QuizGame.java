@@ -346,19 +346,21 @@ public class QuizGame extends GUI {
 
                 db.updateTotalScore(playerId, highestLocalScore);
  //           }
-                db.updateRanking();
             // get all players from online database
             List<Player> players = db.getAllPlayers();
-
+            
+            int rank = 1;
             // add online players to table
             for (Player player : players) {
 
                 leaderboardModel.addRow(new Object[] {
-                    player.rank,
+                    rank,
                     player.id,
                     player.player_name,
                     player.total_score
                 });
+                
+                rank++;
             }
 
         } catch (Exception e) {

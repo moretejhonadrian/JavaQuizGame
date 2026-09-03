@@ -73,8 +73,7 @@ public class Database {
             CREATE TABLE IF NOT EXISTS players (
                 id VARCHAR(36) PRIMARY KEY,
                 player_name VARCHAR(100) NOT NULL UNIQUE,
-                total_score INTEGER NOT NULL,
-                rank INTEGER NOT NULL
+                total_score INTEGER NOT NULL
             )
             """;
 
@@ -113,8 +112,8 @@ public class Database {
     public Player addPlayer(String name) {
 
         String sql =
-            "INSERT INTO players (id, player_name, total_score, rank) " +
-            "VALUES (?, ?, ?, ?)";
+            "INSERT INTO players (id, player_name, total_score) " +
+            "VALUES (?, ?, ?)";
         
         String id = UUID.randomUUID().toString();
         
@@ -129,7 +128,6 @@ public class Database {
                 statement.setString(1, id);
                 statement.setString(2, name);
                 statement.setInt(3, 0);
-                statement.setInt(4, 0);
 
                 int rowsInserted = statement.executeUpdate();
 
@@ -140,7 +138,6 @@ public class Database {
                     return new Player(
                         id,
                         name,
-                        0,
                         0
                     );
                 }
@@ -175,7 +172,7 @@ public class Database {
     public boolean playerExists(String name) {
 
         String sql = """
-            SELECT id, player_name, total_score, rank
+            SELECT *
             FROM players
             WHERE player_name = ?
             LIMIT 1
@@ -247,8 +244,7 @@ public class Database {
                         return new Player(
                             result.getString("id"),
                             result.getString("player_name"),
-                            result.getInt("total_score"),
-                            result.getInt("rank")
+                            result.getInt("total_score")
                         );
                     }
                 }
@@ -274,9 +270,9 @@ public class Database {
         ArrayList<Player> players = new ArrayList<>();
 
         String sql = """
-            SELECT id, player_name, total_score, rank
+            SELECT id, player_name, total_score
             FROM players
-            ORDER BY rank ASC
+            ORDER BY total_score DESC
             """;
         
         Class.forName("com.mysql.cj.jdbc.Driver");
@@ -292,13 +288,11 @@ public class Database {
                 String id = results.getString("id");
                 String playerName = results.getString("player_name");
                 int totalScore = results.getInt("total_score");
-                int rank = results.getInt("rank");
 
                 Player player = new Player(
                     id,
                     playerName,
-                    totalScore,
-                    rank  
+                    totalScore
                 );
 
                 players.add(player);
@@ -419,52 +413,6 @@ public class Database {
 
         return 0;
     }
-    
-    public void updateRanking() {
-
-        String selectSql = """
-            SELECT id
-            FROM players
-            ORDER BY total_score DESC
-            """;
-
-        String updateSql = """
-            UPDATE players
-            SET rank = ?
-            WHERE id = ?
-            """;
-
-        try (
-            Connection conn = connect();
-            PreparedStatement selectStatement =
-                conn.prepareStatement(selectSql);
-            PreparedStatement updateStatement =
-                conn.prepareStatement(updateSql);
-            ResultSet results = selectStatement.executeQuery()
-        ) {
-
-            int rank = 1;
-
-            while (results.next()) {
-
-                String id = results.getString("id");
-
-                updateStatement.setInt(1, rank);
-                updateStatement.setString(2, id);
-
-                updateStatement.executeUpdate();
-
-                rank++;
-            }
-
-            System.out.println("Ranking updated successfully!");
-
-        } catch (SQLException e) {
-            System.err.println(
-                "Error updating ranking: " + e.getMessage()
-            );
-        }
-    }
 
     public void updateTotalScore(String id, int score) throws Exception {
 
@@ -510,8 +458,7 @@ public class Database {
             System.out.println(
                 player.id + " | "
                 + player.player_name + " | "
-                + player.total_score + " | "
-                + player.rank 
+                + player.total_score
             );
         }
         

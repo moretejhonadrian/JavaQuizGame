@@ -11,8 +11,13 @@ import java.io.IOException;
 
 public class CurrentPlayer {
 
+    // writable location outside the JAR
     private static final String FILE_PATH =
-            "src/main/java/files/playerData.json";
+            System.getProperty("user.home")
+            + File.separator
+            + "JavaQuizGame"
+            + File.separator
+            + "playerData.json";
 
     protected Player player;
 
@@ -21,7 +26,8 @@ public class CurrentPlayer {
         File file = new File(FILE_PATH);
 
         try {
-            // create parent folders if they don't exist
+
+            // create parent folder if it doesn't exist
             File parent = file.getParentFile();
 
             if (parent != null && !parent.exists()) {
@@ -30,7 +36,6 @@ public class CurrentPlayer {
 
             // create empty JSON file if it doesn't exist
             if (!file.exists()) {
-                file.createNewFile();
 
                 try (FileWriter writer = new FileWriter(file)) {
                     writer.write("{}");
@@ -42,23 +47,36 @@ public class CurrentPlayer {
 
             // read existing player data
             try (FileReader reader = new FileReader(file)) {
+
                 Gson gson = new Gson();
-                player = gson.fromJson(reader, Player.class);
+
+                player = gson.fromJson(
+                    reader,
+                    Player.class
+                );
             }
 
-        } catch (JsonIOException | JsonSyntaxException | IOException e) {
+        } catch (
+            JsonIOException
+            | JsonSyntaxException
+            | IOException e
+        ) {
+
             System.err.println(
-                "Error loading player data: " + e.getMessage()
+                "Error loading player data: "
+                + e.getMessage()
             );
 
             player = null;
         }
     }
+
     public Player getPlayer() {
         return player;
     }
 
     public boolean isSet() {
+
         return player != null
             && player.id != null
             && !player.id.isBlank();
@@ -66,12 +84,10 @@ public class CurrentPlayer {
 
     public void set(Player p) {
 
-        // Create the Player object
         player = new Player(
             p.id,
             p.player_name,
-            p.total_score,
-            p.rank
+            p.total_score
         );
 
         save();
@@ -79,21 +95,34 @@ public class CurrentPlayer {
 
     private void save() {
 
-        try (FileWriter writer = new FileWriter(FILE_PATH)) {
+        File file = new File(FILE_PATH);
 
-            Gson gson = new GsonBuilder()
-                    .setPrettyPrinting()
-                    .create();
+        try {
 
-            gson.toJson(player, writer);
+            File parent = file.getParentFile();
 
-        } catch (Exception e) {
+            if (parent != null && !parent.exists()) {
+                parent.mkdirs();
+            }
+
+            try (FileWriter writer = new FileWriter(file)) {
+
+                Gson gson = new GsonBuilder()
+                        .setPrettyPrinting()
+                        .create();
+
+                gson.toJson(player, writer);
+            }
+
+        } catch (JsonIOException | IOException e) {
+
             System.err.println(
-                "Error saving player data: " + e.getMessage()
+                "Error saving player data: "
+                + e.getMessage()
             );
         }
     }
-    
+
     public void logout() {
 
         player = null;
@@ -101,9 +130,15 @@ public class CurrentPlayer {
         File file = new File(FILE_PATH);
 
         if (file.exists()) {
+
             if (file.delete()) {
-                System.out.println("Player logged out.");
+
+                System.out.println(
+                    "Player logged out."
+                );
+
             } else {
+
                 System.err.println(
                     "Could not delete player data."
                 );
