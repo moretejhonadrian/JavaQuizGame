@@ -1,55 +1,59 @@
 package javaquizgame;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonIOException;
+import com.google.gson.JsonSyntaxException;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 
-public class CurrentPlayer extends Scoreboard {
+public class CurrentPlayer {
+
+    private static final String FILE_PATH =
+            "src/main/java/files/playerData.json";
 
     protected Player player;
 
     public CurrentPlayer() {
-        this.player = getCurrentPlayer();
-    }
-    
-    public final Player getCurrentPlayer() {
-        String sql = """
-            SELECT *
-            FROM players
-            WHERE current_player = 1
-            LIMIT 1
-            """;
-        
-        try (
-            Connection conn = connect();
-            PreparedStatement statement = conn.prepareStatement(sql);
-        ) {
-            
-            try (ResultSet result = statement.executeQuery()) {
 
-                if (result.next()) {
-                    
-                    return new Player (
-                        result.getString("player_id"),
-                        result.getString("player_name"),
-                        result.getInt("total_score"),
-                        result.getInt("rank")
-                    );
-                }
+        File file = new File(FILE_PATH);
+
+        try {
+            // create parent folders if they don't exist
+            File parent = file.getParentFile();
+
+            if (parent != null && !parent.exists()) {
+                parent.mkdirs();
             }
 
-        } catch (SQLException e) {
+            // create empty JSON file if it doesn't exist
+            if (!file.exists()) {
+                file.createNewFile();
 
+                try (FileWriter writer = new FileWriter(file)) {
+                    writer.write("{}");
+                }
+
+                player = null;
+                return;
+            }
+
+            // read existing player data
+            try (FileReader reader = new FileReader(file)) {
+                Gson gson = new Gson();
+                player = gson.fromJson(reader, Player.class);
+            }
+
+        } catch (JsonIOException | JsonSyntaxException | IOException e) {
             System.err.println(
-                "Error setting current player "
-                + e.getMessage()
+                "Error loading player data: " + e.getMessage()
             );
+
+            player = null;
         }
-        
-        return null;
     }
-    
     public Player getPlayer() {
         return player;
     }
@@ -59,102 +63,51 @@ public class CurrentPlayer extends Scoreboard {
             && player.id != null
             && !player.id.isBlank();
     }
-    
-    public void logout(String id) {
 
-        this.player = null;
+    public void set(Player p) {
 
-        setNoCurrentPlayer(id);
+        // Create the Player object
+        player = new Player(
+            p.id,
+            p.player_name,
+            p.total_score,
+            p.rank
+        );
+
+        save();
+    }
+
+    private void save() {
+
+        try (FileWriter writer = new FileWriter(FILE_PATH)) {
+
+            Gson gson = new GsonBuilder()
+                    .setPrettyPrinting()
+                    .create();
+
+            gson.toJson(player, writer);
+
+        } catch (Exception e) {
+            System.err.println(
+                "Error saving player data: " + e.getMessage()
+            );
+        }
     }
     
-    public void setNoCurrentPlayer(String id) {
-        String sql = "UPDATE players SET current_player = 0 WHERE player_id = ?";
-        
-        System.out.println(id); 
-        
-        try (
-            Connection conn = connect();
-            PreparedStatement statement = conn.prepareStatement(sql);
-        ) {
-            
-            statement.setObject(1, id);
+    public void logout() {
 
-            int rows = statement.executeUpdate();
+        player = null;
 
-            if (rows > 0) {
-                System.out.println("Player is no longer current!");
+        File file = new File(FILE_PATH);
+
+        if (file.exists()) {
+            if (file.delete()) {
+                System.out.println("Player logged out.");
             } else {
-                System.out.println("Player not found!");
+                System.err.println(
+                    "Could not delete player data."
+                );
             }
-
-        } catch (SQLException e) {
-
-            System.err.println(
-                "Error setting current player "
-                + e.getMessage()
-            );
-        }
-    }
-    
-    public void setCurrentPlayer(Player p) {
-        
-        if (!isPlayerInDB(p.id)) {
-            System.out.println("not in the local db");
-            addPlayer(p);
-        } else {
-            updateCurrentPlayer(p.id);
-        }
-        
-        this.player = getCurrentPlayer();
-    }
-    
-    public void updateCurrentPlayer(String id) {
-        String sql =
-            "UPDATE players SET current_player = 1 WHERE player_id = ?";
-
-        try (
-            Connection conn = connect();
-            PreparedStatement statement = conn.prepareStatement(sql)
-        ) {
-
-            statement.setString(1, id);
-            statement.executeUpdate();
-
-        } catch (SQLException e) {
-            System.err.println(
-                "Error setting current player: " + e.getMessage()
-            );
-        }
-    }
-    
-    public boolean isPlayerInDB(String id) {
-
-        String sql = """
-            SELECT 1
-            FROM players
-            WHERE player_id = ?
-            LIMIT 1
-            """;
-
-        try (
-            Connection conn = connect();
-            PreparedStatement statement = conn.prepareStatement(sql)
-        ) {
-
-            statement.setString(1, id);
-
-            try (ResultSet result = statement.executeQuery()) {
-
-                return result.next();
-            }
-
-        } catch (SQLException e) {
-
-            System.err.println(
-                "Error checking player: " + e.getMessage()
-            );
-
-            return false;
         }
     }
 }

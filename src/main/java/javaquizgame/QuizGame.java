@@ -57,11 +57,11 @@ public class QuizGame extends GUI {
         }
 
         //save player
-        Player player = leaderboard.addPlayer(name);
+        Player player = db.addPlayer(name);
 
         if (player != null) {
             
-            currentPlayer.setCurrentPlayer(player);
+            currentPlayer.set(player);
             setPlayer();
 
             JOptionPane.showMessageDialog(
@@ -100,12 +100,12 @@ public class QuizGame extends GUI {
         }
 
         // Find player in database
-        Player player = leaderboard.getPlayerByName(name);
+        Player player = db.getPlayer(name);
 
         if (player != null) {
 
             // Set logged-in player
-            currentPlayer.setCurrentPlayer(player);
+            currentPlayer.set(player);
             setPlayer();
 
             JOptionPane.showMessageDialog(
@@ -126,7 +126,13 @@ public class QuizGame extends GUI {
             cardPanel.revalidate();
             cardPanel.repaint();
 
-        } 
+        } else {
+            JOptionPane.showMessageDialog(
+                this,
+                "Player \"" + name + "\" doesn't exists!"
+                + "\nEnter an existing name."
+            );
+        }
     }
     
     @Override
@@ -140,7 +146,7 @@ public class QuizGame extends GUI {
 
         if (choice == JOptionPane.YES_OPTION) {
 
-            currentPlayer.logout(playerId);
+            currentPlayer.logout();
 
             // Remove old start panel
             cardPanel.remove(0);
@@ -322,7 +328,7 @@ public class QuizGame extends GUI {
                         + "<br>You scored " + score + " out of " + TOTAL_QUESTIONS
                         + "<br>(" + String.format("%.0f", percentage) + "%)</div></html>");
 
-        scoreboard.addScore(playerId, "All", score);
+        db.addScore(playerId, "All", score);
         cardLayout.show(cardPanel, RESULT_CARD);
     }
     
@@ -333,27 +339,16 @@ public class QuizGame extends GUI {
 
         try {
             // only update online leaderboard if a player is logged in
-            if (playerId != null) {
+//            if (playerId != null) {
 
                 // Get highest score from local database
-                int highestLocalScore = scoreboard.getHighestScore(playerId);
+                int highestLocalScore = db.getHighestScore(playerId);
 
-                // Get current player data from online database
-                Player onlinePlayer = leaderboard.getPlayerByID(playerId);
-                
-                // Only update if local score is higher
-                if (highestLocalScore > onlinePlayer.total_score) {
-
-                    leaderboard.updateTotalScore(
-                        playerId,
-                        highestLocalScore
-                    );
-                }
-            }
-
+                db.updateTotalScore(playerId, highestLocalScore);
+ //           }
+                db.updateRanking();
             // get all players from online database
-            ArrayList<Player> players =
-                leaderboard.getAllPlayers();
+            List<Player> players = db.getAllPlayers();
 
             // add online players to table
             for (Player player : players) {

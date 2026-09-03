@@ -71,15 +71,13 @@ public abstract class GUI extends JFrame implements ActionListener {
     protected static final String LEADERBOARD_CARD = "LEADERBOARD";
     
     //Needed Data
-    protected Leaderboard leaderboard;
-    protected CurrentPlayer currentPlayer;
-    protected Scoreboard scoreboard;
-
+    Database db;
+    CurrentPlayer currentPlayer;
+    
     public GUI(String title) {
         super(title);
         
-        leaderboard = new Leaderboard();
-        scoreboard = new Scoreboard();
+        db = new Database();
         currentPlayer = new CurrentPlayer();
     }
     
