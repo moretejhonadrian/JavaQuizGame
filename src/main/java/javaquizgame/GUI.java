@@ -5,13 +5,12 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.ActionListener;
+import java.util.Map;
 import javax.swing.table.DefaultTableCellRenderer;
 
 public abstract class GUI extends JFrame implements ActionListener {  
     
-    protected static final int QUESTIONS_PER_STAGE = 10;
-    protected static final int STAGE_COUNT = 3;
-    protected static final int TOTAL_QUESTIONS = QUESTIONS_PER_STAGE * STAGE_COUNT;
+    protected static final int QUESTIONS_PER_QUIZ = 10;
     
     // ---------- Color palette ----------
     protected static final Color BG_DARK = new Color(22, 26, 46);
@@ -29,12 +28,6 @@ public abstract class GUI extends JFrame implements ActionListener {
             new Color(41, 128, 185),   // Stage 1 - blue
             new Color(155, 89, 182),   // Stage 2 - purple
             new Color(230, 126, 34)    // Stage 3 - orange
-    };
-    
-    protected static final String[] STAGE_TITLES = {
-            "STAGE 1: JAVA BASICS",
-            "STAGE 2: OBJECT-ORIENTED PROGRAMMING",
-            "STAGE 3: COLLECTIONS & ADVANCED TOPICS"
     };
 
     private static final String FONT_FAMILY = "Segoe UI";
@@ -66,21 +59,23 @@ public abstract class GUI extends JFrame implements ActionListener {
     protected static final String START_CARD = "START";
     protected static final String SIGNUP_CARD = "SIGNUP";
     protected static final String LOGIN_CARD = "LOGIN";
+    protected static final String QUIZZES_CARD = "QUIZZES";
     protected static final String QUIZ_CARD = "QUIZ";
     protected static final String RESULT_CARD = "RESULT";
     protected static final String LEADERBOARD_CARD = "LEADERBOARD";
     
     //Needed Data
-    protected Leaderboard leaderboard;
+    protected Database db;
     protected CurrentPlayer currentPlayer;
-    protected Scoreboard scoreboard;
-
+    protected QuestionBank questionBank;
+    protected int currentTotalPoints;
+    
     public GUI(String title) {
         super(title);
         
-        leaderboard = new Leaderboard();
-        scoreboard = new Scoreboard();
+        db = new Database();
         currentPlayer = new CurrentPlayer();
+        questionBank = new QuestionBank();
     }
     
     /** A JPanel that paints a solid rounded-rectangle background. */
@@ -105,7 +100,7 @@ public abstract class GUI extends JFrame implements ActionListener {
         }
     }
 
-    private JButton makeButton(String text, Color bg, Color fg, int fontSize) {
+    protected JButton makeButton(String text, Color bg, Color fg, int fontSize) {
         JButton button = new JButton(text);
         button.setFont(new Font(FONT_FAMILY, Font.BOLD, fontSize));
         button.setBackground(bg);
@@ -135,6 +130,7 @@ public abstract class GUI extends JFrame implements ActionListener {
         cardPanel.add(buildStartPanel(), START_CARD);
         cardPanel.add(buildSignupPanel(), SIGNUP_CARD);
         cardPanel.add(buildLoginPanel(), LOGIN_CARD);
+        cardPanel.add(buildQuizzesPanel(), QUIZZES_CARD);
         cardPanel.add(buildQuizPanel(), QUIZ_CARD);
         cardPanel.add(buildResultPanel(), RESULT_CARD);
         cardPanel.add(buildLeaderboardPanel(), LEADERBOARD_CARD);
@@ -182,7 +178,7 @@ public abstract class GUI extends JFrame implements ActionListener {
         title3.setAlignmentX(Component.CENTER_ALIGNMENT);
         title3.setHorizontalAlignment(SwingConstants.CENTER);
 
-        JLabel subtitle = makeLabel("3 stages | 10 questions each ",
+        JLabel subtitle = makeLabel(questionBank.getQuizzesSize() + " stages | 10 questions each ",
                 Font.PLAIN, 14, TEXT_MUTED);
         subtitle.setAlignmentX(Component.CENTER_ALIGNMENT);
         subtitle.setBorder(new EmptyBorder(10, 0, 30, 0));
@@ -195,8 +191,12 @@ public abstract class GUI extends JFrame implements ActionListener {
                 BorderFactory.createLineBorder(new Color(200, 203, 214), 1, true),
                 new EmptyBorder(6, 10, 6, 10)));
 
-        JButton startButton = makeButton("START QUIZ", STAGE_COLORS[0], Color.WHITE, 16);
-        startButton.addActionListener(e -> startQuiz());
+//        JButton startButton = makeButton("START QUIZ", STAGE_COLORS[0], Color.WHITE, 16);
+//        startButton.addActionListener(e -> startQuiz());
+        JButton quizzesButton = makeButton("QUIZZES", STAGE_COLORS[0], Color.WHITE, 16);
+        quizzesButton.addActionListener(e -> {
+            rebuildScreen(buildQuizzesPanel(), QUIZZES_CARD, 3);
+        });
 
         JButton viewLeaderboardButton = makeButton("VIEW LEADERBOARD", GOLD, TEXT_DARK, 14);
         viewLeaderboardButton.addActionListener(e -> {
@@ -235,7 +235,8 @@ public abstract class GUI extends JFrame implements ActionListener {
             card.add(Box.createRigidArea(new Dimension(0, 4)));
             card.add(messageLabel);
             card.add(Box.createRigidArea(new Dimension(0, 30)));
-            card.add(startButton);
+            card.add(quizzesButton);
+//            card.add(startButton);
             card.add(Box.createRigidArea(new Dimension(0, 12)));
             card.add(viewLeaderboardButton);
             card.add(Box.createRigidArea(new Dimension(0, 12)));
@@ -358,6 +359,76 @@ public abstract class GUI extends JFrame implements ActionListener {
         return outer;
     }
     
+    private JPanel buildQuizzesPanel() {
+        Map<String, String> quizzesNames = questionBank.getQuizzesNames();
+
+        JPanel outer = new JPanel(new GridBagLayout());
+        outer.setBackground(BG_DARK);
+
+        RoundedPanel card = new RoundedPanel(CARD_BG, 28);
+        card.setLayout(new BorderLayout());
+        card.setBorder(new EmptyBorder(30, 40, 35, 40));
+        card.setPreferredSize(new Dimension(560, 500));
+
+        // header
+        JPanel headerPanel = new JPanel(new BorderLayout());
+        headerPanel.setOpaque(false);
+
+        // Title + subtitle
+        JPanel titlePanel = new JPanel();
+        titlePanel.setLayout(new BoxLayout(titlePanel, BoxLayout.Y_AXIS));
+        titlePanel.setOpaque(false);
+
+        JLabel title = makeLabel("QUIZZES", Font.BOLD, 28, STAGE_COLORS[0]);
+
+        JLabel subtitle = makeLabel("Choose a quiz to begin", Font.PLAIN, 14, TEXT_MUTED);
+
+        titlePanel.add(title);
+        titlePanel.add(Box.createVerticalStrut(5));
+        titlePanel.add(subtitle);
+
+        headerPanel.add(titlePanel, BorderLayout.WEST);
+
+        // back button
+        JButton backButton = makeButton("→", GRAY_BTN, Color.WHITE, 18);
+        backButton.setPreferredSize(new Dimension(80, 20));
+
+        backButton.addActionListener(
+            e -> cardLayout.show(cardPanel, START_CARD)
+        );
+
+        headerPanel.add(backButton, BorderLayout.EAST);
+
+        card.add(headerPanel, BorderLayout.NORTH);
+
+        // content
+        JPanel contentPanel = new JPanel();
+        contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
+        contentPanel.setOpaque(false);
+
+        // Space between header and line
+        contentPanel.add(Box.createVerticalStrut(25));
+        
+        // separator
+        JSeparator separator = new JSeparator();
+        separator.setForeground(new Color(220, 220, 225));
+        separator.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        contentPanel.add(separator);
+
+        // space between line and quiz buttons
+        contentPanel.add(Box.createVerticalStrut(25));
+
+        // quiz buttons
+        quizzesButtons(quizzesNames, contentPanel);
+
+        card.add(contentPanel, BorderLayout.CENTER);
+
+        outer.add(card);
+
+        return outer;
+    }
+
     private JPanel buildQuizPanel() {
         JPanel outer = new JPanel(new GridBagLayout());
         outer.setBackground(BG_DARK);
@@ -387,7 +458,7 @@ public abstract class GUI extends JFrame implements ActionListener {
         stageLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
         // Progress bar
-        progressBar = new JProgressBar(0, TOTAL_QUESTIONS);
+        progressBar = new JProgressBar(0, QUESTIONS_PER_QUIZ);
         progressBar.setValue(0);
         progressBar.setForeground(STAGE_COLORS[0]);
         progressBar.setBackground(new Color(226, 228, 236));
@@ -422,7 +493,7 @@ public abstract class GUI extends JFrame implements ActionListener {
         centerPanel.setOpaque(false);
         centerPanel.setLayout(new BoxLayout(centerPanel, BoxLayout.Y_AXIS));
 
-        questionNumberLabel = makeLabel("Question 1 of " + TOTAL_QUESTIONS, Font.PLAIN, 13, TEXT_MUTED);
+        questionNumberLabel = makeLabel("Question 1 of " + QUESTIONS_PER_QUIZ, Font.PLAIN, 13, TEXT_MUTED);
         questionNumberLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         questionLabel = new JLabel("");
@@ -461,7 +532,7 @@ public abstract class GUI extends JFrame implements ActionListener {
 
         JPanel footerPanel = new JPanel(new BorderLayout());
         footerPanel.setOpaque(false);
-        scoreLabel = makeLabel("Score: 0 / " + TOTAL_QUESTIONS, Font.BOLD, 14, TEXT_DARK);
+        scoreLabel = makeLabel("Score: 0 / " + QUESTIONS_PER_QUIZ, Font.BOLD, 14, TEXT_DARK);
 
         nextButton = makeButton("SUBMIT ANSWER", STAGE_COLORS[0], Color.WHITE, 15);
         nextButton.addActionListener(this);
@@ -592,10 +663,22 @@ public abstract class GUI extends JFrame implements ActionListener {
         }
     }
     
+    protected void rebuildScreen(JPanel jPanel, String name, int index) {
+        cardPanel.remove(index);
+
+        cardPanel.add(jPanel, name, index);
+
+        cardLayout.show(cardPanel, name);
+
+        cardPanel.revalidate();
+        cardPanel.repaint();
+    }
+    
     protected abstract void handleSignup();
     protected abstract void handleLogin();
     protected abstract void handleLogout();
-    protected abstract void startQuiz();
+    protected abstract void quizzesButtons(Map<String, String> quizzesNames, JPanel contentPanel);
+    protected abstract void startQuiz(int quizIndex, String quizId);
     protected abstract void handleReturn();
-    protected abstract void refreshLeaderboard();       
+    protected abstract void refreshLeaderboard();    
 }

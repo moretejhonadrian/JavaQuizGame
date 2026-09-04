@@ -102,4 +102,8 @@ public class QuestionBank {
     public int getQuizzesSize() {
         return quizzes.size();
     }
+    
+    public String getQuizTitle(String key) {
+        return quizzesNames.get(key);
+    }
 }
